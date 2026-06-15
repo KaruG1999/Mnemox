@@ -1,0 +1,20 @@
+# Binary output
+mnemox
+bin/
+
+# SQLite database and WAL auxiliary files
+*.db
+*.db-wal
+*.db-shm
+
+# Environment — never commit real credentials
+.env
+
+# Node / frontend
+node_modules/
+dist/
+out/
+
+# Go build cache (local artifacts)
+*.test
+*.out
