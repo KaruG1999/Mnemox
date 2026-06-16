@@ -1,5 +1,7 @@
 # Mnemox
 
+![Mnemox](img/portada-gh.png)
+
 **Local Data Availability sidecar for ZK circuits on Stellar.**
 
 Mnemox permanently indexes Soroban contract events and exposes Poseidon Merkle proofs over a loopback HTTP API. It exists to close a structural gap in Stellar's infrastructure: Soroban RPC nodes prune event history after approximately seven days, which breaks any ZK circuit whose proof generation depends on a complete, ordered commitment leaf sequence.
@@ -12,36 +14,7 @@ Protocol 26 (Yardstick) drastically reduced the on-chain gas costs for verifying
 
 ## Architecture
 
-```
-Stellar Soroban RPC
-        │  getEvents (poll)
-        ▼
-┌───────────────────────────┐
-│  internal/ingestion       │  Polls RPC, decodes XDR, persists to WAL
-│  (Streamer — Go)          │  Bounded pageCh provides backpressure
-└──────────┬────────────────┘
-           │ SaveBatch (atomic SQLite tx)
-           ▼
-┌───────────────────────────┐
-│  internal/database        │  SQLite WAL, single-connection pool
-│  (Store — Go)             │  VerifyMonotonicity() at cold boot
-└──────────┬────────────────┘
-           │ tree.Insert (Poseidon BN254)
-           ▼
-┌───────────────────────────┐
-│  internal/crypto          │  Incremental Merkle tree, depth 20
-│  (MerkleTree — Go)        │  BN254 field validation, Proof()
-└──────────┬────────────────┘
-           │ HTTP (127.0.0.1 loopback only)
-           ▼
-┌───────────────────────────┐
-│  internal/server          │  REST API, rate limiter, dashboard HTML
-│  (Server — Go)            │  Stale State Guard on /tree/proof/*
-└───────────────────────────┘
-           │ @mnemox/sdk (npm)
-           ▼
-  ZK circuit prover (Noir / Circom)
-```
+![Architecture](img/arqui.png)
 
 ---
 
