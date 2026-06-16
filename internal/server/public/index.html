@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>MNEMOX // ZK INGESTION LAYER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg-base:          #030305;
+  --bg-glass-layer:   rgba(26,2,15,0.25);
+  --bg-glass-elevated:rgba(38,4,22,0.50);
+  --bg-glass-high:    rgba(52,6,32,0.75);
+  --accent:           #CAD183;
+  --accent-citron:    #CAD183;
+  --accent-tyrian:    #66023C;
+  --accent-dim:       rgba(202,209,131,0.06);
+  --accent-glow:      rgba(202,209,131,0.14);
+  --text-primary:     #ECEEF0;
+  --text-secondary:   #555D6B;
+  --text-muted:       #2E3340;
+  --border-specular:  rgba(255,255,255,0.05);
+  --border-top-light: rgba(255,255,255,0.12);
+  --border-active:    rgba(102,2,60,0.40);
+  --shadow-3d:        0 24px 48px -12px rgba(0,0,0,0.72),inset 0 1px 0 rgba(255,255,255,0.08);
+  --blur-core:        blur(32px) saturate(210%);
+  --ease-spring:      cubic-bezier(0.16,1,0.3,1);
+  --font-mono:        "JetBrains Mono","SF Mono","Fira Code",monospace;
+  --font-ui:          "Inter",system-ui,sans-serif;
+}
+
+html,body{height:100%;background:#030305;color:var(--text-primary);
+  font-family:var(--font-ui);font-size:13px;letter-spacing:-0.01em;
+  -webkit-font-smoothing:antialiased;overflow:hidden}
+
+/* Canvas handles all atmosphere — body::before is a no-op */
+body::before{content:none}
+
+/* ── Ribbon ── */
+#ribbon{
+  position:relative;z-index:100;
+  height:30px;background:var(--accent);color:#030305;
+  display:flex;align-items:center;justify-content:center;gap:18px;
+  font-family:var(--font-mono);font-size:9px;font-weight:700;
+  letter-spacing:.13em;text-transform:uppercase;
+  white-space:nowrap;overflow:hidden;flex-shrink:0;
+}
+#ribbon::after{
+  content:'';
+  position:absolute;inset:0;
+  width:50%;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  animation:ribbonShimmer 6s linear infinite;
+  pointer-events:none;
+}
+@keyframes ribbonShimmer{
+  0%  {transform:translateX(-200%)}
+  100%{transform:translateX(400%)}
+}
+#ribbon a{color:inherit;text-decoration:none;border-bottom:1px solid rgba(3,3,5,0.30)}
+#ribbon a:hover{border-bottom-color:rgba(3,3,5,0.80)}
+.rs{opacity:.35}
+
+/* ── Shell ── */
+#shell{
+  position:relative;z-index:1;
+  height:calc(100vh - 30px);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+/* ── Nav ── */
+#nav{
+  height:52px;flex-shrink:0;
+  display:flex;align-items:center;
+  padding:0 28px;gap:24px;
+  border-bottom:1px solid var(--border-specular);
+  background:rgba(3,3,5,0.70);
+  backdrop-filter:var(--blur-core);-webkit-backdrop-filter:var(--blur-core);
+}
+
+.logo{display:flex;align-items:center;gap:9px;flex-shrink:0}
+.logo-hex{color:var(--accent)}
+.logo-text{
+  font-family:var(--font-mono);font-size:10px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--text-primary);
+}
+.logo-text em{color:var(--text-muted);font-style:normal;margin:0 4px}
+
+/* Segmented control */
+.seg{
+  flex:1;display:flex;justify-content:center;
+}
+.seg-inner{
+  position:relative;
+  display:flex;align-items:center;
+  background:var(--bg-glass-layer);
+  border:1px solid var(--border-specular);
+  border-top:1px solid var(--border-top-light);
+  border-radius:7px;
+  padding:3px;
+  backdrop-filter:var(--blur-core);-webkit-backdrop-filter:var(--blur-core);
+  box-shadow:var(--shadow-3d);
+}
+.seg-slide{
+  position:absolute;
+  top:3px;left:3px;height:calc(100% - 6px);
+  background:rgba(102,2,60,0.25);
+  border:1px solid rgba(202,209,131,0.30);
+  border-radius:5px;
+  box-shadow:0 2px 12px rgba(0,0,0,0.5),inset 0 1px 0 rgba(202,209,131,0.08);
+  transition:left .36s var(--ease-spring),width .36s var(--ease-spring);
+  pointer-events:none;z-index:0;
+}
+.seg-btn{
+  position:relative;z-index:1;
+  padding:6px 20px;border-radius:4px;
+  font-family:var(--font-mono);font-size:9.5px;font-weight:600;
+  letter-spacing:.10em;text-transform:uppercase;
+  color:#6B7280;cursor:pointer;
+  transition:color .2s ease;white-space:nowrap;user-select:none;
+}
+.seg-btn.active{color:var(--accent-citron)}
+.seg-btn:hover:not(.active){color:rgba(236,238,240,0.45)}
+
+/* Nav right */
+.nav-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.sys-pill{
+  display:flex;align-items:center;gap:5px;
+  font-family:var(--font-mono);font-size:8.5px;font-weight:700;
+  letter-spacing:.10em;text-transform:uppercase;color:var(--accent-citron);
+  border:1px solid rgba(102,2,60,0.40);
+  background:rgba(102,2,60,0.12);
+  padding:4px 10px;border-radius:4px;
+}
+.pulse-dot{
+  position:relative;
+  width:6px;height:6px;border-radius:50%;
+  background:var(--accent-citron);flex-shrink:0;
+}
+.pulse-dot::after{
+  content:'';
+  position:absolute;
+  top:50%;left:50%;
+  width:100%;height:100%;
+  border-radius:50%;
+  background:var(--accent-citron);
+  opacity:.6;
+  animation:statusPulse 2s cubic-bezier(0.16,1,0.3,1) infinite;
+}
+@keyframes statusPulse{
+  0%  {transform:translate(-50%,-50%) scale(1);opacity:0.6}
+  100%{transform:translate(-50%,-50%) scale(2.4);opacity:0}
+}
+.nav-dash-link{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--font-mono);font-size:9px;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;
+  padding:6px 14px;border-radius:5px;
+  background:var(--accent);color:#030305;
+  text-decoration:none;
+  transform:perspective(1000px) scale(1);
+  transition:transform 0.2s cubic-bezier(0.16,1,0.3,1),opacity .15s;
+}
+.nav-dash-link:hover{
+  opacity:.90;
+  transform:perspective(1000px) scale(1.015);
+}
+.nav-dash-link:active{transform:perspective(1000px) scale(0.98)}
+
+/* ── Panels ── */
+#panels{flex:1;position:relative;overflow:hidden}
+.panel{
+  position:absolute;inset:0;
+  overflow-y:auto;overflow-x:hidden;
+  opacity:0;transform:translateY(8px);
+  pointer-events:none;
+  transition:opacity .28s var(--ease-spring),transform .28s var(--ease-spring);
+}
+.panel.active{
+  opacity:1;transform:translateY(0);
+  pointer-events:auto;
+}
+.panel::-webkit-scrollbar{width:4px}
+.panel::-webkit-scrollbar-track{background:transparent}
+.panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:2px}
+
+/* ══════════════════════════
+   PANEL 01 — OVERVIEW
+══════════════════════════ */
+#panel-01{padding:48px 56px 64px}
+
+.hero-block{
+  max-width:700px;margin-bottom:52px;
+}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--font-mono);font-size:8.5px;font-weight:700;
+  letter-spacing:.15em;text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:22px;
+}
+.hero-h1{
+  font-size:clamp(32px,4.5vw,58px);
+  font-weight:700;letter-spacing:-.04em;line-height:1.04;
+  color:var(--text-primary);margin-bottom:16px;
+}
+.hero-h1 mark{
+  background:none;
+  -webkit-text-fill-color:transparent;
+  background:linear-gradient(110deg,var(--accent-citron) 0%,rgba(202,209,131,0.55) 100%);
+  -webkit-background-clip:text;background-clip:text;
+}
+.hero-sub{
+  font-size:14.5px;color:var(--text-secondary);
+  line-height:1.7;max-width:560px;letter-spacing:-.01em;
+}
+.hero-sub b{color:rgba(236,238,240,0.75);font-weight:500}
+
+.hero-actions{display:flex;gap:10px;margin-top:32px;align-items:center}
+.btn-glass{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 22px;border-radius:6px;
+  background:var(--bg-glass-elevated);
+  border:1px solid var(--border-specular);
+  border-top:1px solid var(--border-top-light);
+  box-shadow:var(--shadow-3d);
+  backdrop-filter:var(--blur-core);-webkit-backdrop-filter:var(--blur-core);
+  font-family:var(--font-mono);font-size:9.5px;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;
+  color:var(--text-primary);text-decoration:none;cursor:pointer;
+  transition:background .15s,border-color .15s,transform .12s var(--ease-spring);
+  transform:perspective(1000px) translateZ(0);
+}
+.btn-glass:hover{background:var(--bg-glass-high);border-color:rgba(255,255,255,0.10);transform:perspective(1000px) translateZ(4px)}
+.btn-glass:active{transform:perspective(1000px) translateZ(-1px)}
+.btn-accent{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 22px;border-radius:6px;
+  background:var(--accent);color:#030305;
+  font-family:var(--font-mono);font-size:9.5px;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;text-decoration:none;
+  transform:perspective(1000px) scale(1);
+  transition:transform 0.2s cubic-bezier(0.16,1,0.3,1),opacity .15s;
+}
+.btn-accent:hover{
+  opacity:.90;
+  transform:perspective(1000px) scale(1.015);
+}
+.btn-accent:active{transform:perspective(1000px) scale(0.98)}
+.btn-arrow{width:13px;height:13px;flex-shrink:0}
+
+/* Telemetry strip */
+.telem{
+  display:flex;align-items:center;gap:0;
+  font-family:var(--font-mono);font-size:9px;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text-muted);
+  border:1px solid var(--border-specular);
+  border-top:1px solid var(--border-top-light);
+  border-radius:5px;
+  background:var(--bg-glass-layer);
+  backdrop-filter:var(--blur-core);-webkit-backdrop-filter:var(--blur-core);
+  overflow:hidden;
+  width:fit-content;
+  margin-top:40px;
+}
+.telem-cell{
+  padding:8px 18px;
+  border-right:1px solid var(--border-specular);
+  transition:background .15s;
+}
+.telem-cell:last-child{border-right:none}
+.telem-cell:hover{background:var(--bg-glass-elevated)}
+.telem-key{color:var(--text-muted)}
+.telem-val{color:var(--text-secondary);margin-left:4px}
+.telem-val.live{color:var(--accent)}
+
+/* Glass card */
+.glass-card{
+  background:var(--bg-glass-layer);
+  border:1px solid var(--border-specular);
+  border-top:1px solid var(--border-top-light);
+  border-radius:10px;
+  box-shadow:var(--shadow-3d);
+  backdrop-filter:var(--blur-core);-webkit-backdrop-filter:var(--blur-core);
+  transform:perspective(1000px) translateZ(0);
+  transition:background .2s,box-shadow .2s,transform .2s var(--ease-spring);
+}
+.glass-card:hover{
+  background:var(--bg-glass-elevated);
+  box-shadow:0 24px 48px -12px rgba(0,0,0,0.80),inset 0 1px 0 rgba(255,255,255,0.10),0 0 0 1px var(--border-active);
+  transform:perspective(1000px) translateZ(6px);
+}
+
+/* Feature row */
+.feat-row{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:1px;background:var(--border-specular);
+  border:1px solid var(--border-specular);
+  border-top:1px solid var(--border-top-light);
+  border-radius:10px;overflow:hidden;
+  box-shadow:var(--shadow-3d);
+  margin-top:52px;
+}
+.feat-cell{
+  background:var(--bg-glass-layer);
+  padding:28px 28px 24px;
+  transition:background .2s;
+}
+.feat-cell:hover{background:var(--bg-glass-elevated)}
+.feat-tag{
+  font-family:var(--font-mono);font-size:8px;font-weight:700;
+  letter-spacing:.15em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:12px;
+}
+.feat-title{
+  font-size:14px;font-weight:600;letter-spacing:-.03em;
+  color:var(--text-primary);margin-bottom:8px;
+}
+.feat-body{
+  font-size:12px;color:var(--text-secondary);
+  line-height:1.65;
+}
+.feat-mono{
+  font-family:var(--font-mono);font-size:9.5px;
+  color:var(--text-muted);margin-top:12px;
+  border-left:2px solid var(--border-specular);
+  padding-left:8px;
+}
+
+/* Root widget */
+.root-widget{
+  margin-top:36px;
+  display:flex;align-items:stretch;gap:0;
+  border:1px solid var(--border-active);
+  border-top:1px solid rgba(202,209,131,0.20);
+  border-radius:8px;
+  background:rgba(102,2,60,0.08);
+  backdrop-filter:var(--blur-core);-webkit-backdrop-filter:var(--blur-core);
+  box-shadow:0 0 40px rgba(102,2,60,0.10);
+  overflow:hidden;
+  max-width:700px;
+}
+.root-label-col{
+  display:flex;flex-direction:column;justify-content:center;
+  padding:14px 18px;
+  border-right:1px solid var(--border-active);
+  background:rgba(102,2,60,0.10);
+  flex-shrink:0;
+}
+.root-label{
+  font-family:var(--font-mono);font-size:8px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
+  display:flex;align-items:center;gap:6px;
+}
+.root-leaves{
+  font-family:var(--font-mono);font-size:8.5px;
+  color:var(--text-muted);margin-top:4px;letter-spacing:.06em;
+}
+.root-hash-col{
+  flex:1;display:flex;align-items:center;
+  padding:14px 18px;overflow:hidden;
+}
+.root-hash{
+  font-family:var(--font-mono);font-size:11px;
+  color:rgba(202,209,131,0.65);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  letter-spacing:.02em;
+}
+
+/* ── Hero asymmetric layout (65 / 35) ── */
+.hero-row{
+  display:flex;align-items:center;
+  gap:48px;margin-bottom:52px;
+}
+.hero-col-text{flex:0 0 62%;min-width:0}
+.hero-col-video{flex:1;min-width:0;display:flex;align-items:center}
+.hero-row .hero-block{max-width:none;margin-bottom:0}
+.video-widget{
+  position:relative;max-width:480px;width:100%;
+  border-radius:12px;
+  border:1px solid rgba(102,2,60,0.40);
+  background:rgba(15,15,22,0.30);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  box-shadow:0 30px 60px rgba(0,0,0,0.60);
+  overflow:hidden;
+}
+#intro-canvas{display:block;width:100%;aspect-ratio:6/5}
+
+/* ══════════════════════════
+   PANEL 02 — REST REFERENCE
+══════════════════════════ */
+#panel-02{padding:32px 56px 64px}
+
+.ref-grid{display:flex;flex-direction:column;gap:12px;max-width:900px}
+
+.endpoint-card{
+  background:var(--bg-glass-layer);
+  border:1px solid var(--border-specular);
+  border-top:1px solid var(--border-top-light);
+  border-radius:10px;
+  box-shadow:var(--shadow-3d);
+  backdrop-filter:var(--blur-core);-webkit-backdrop-filter:var(--blur-core);
+  overflow:hidden;
+  transform:perspective(1000px) translateZ(0);
+}
+.ep-head{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 20px;
+  border-bottom:1px solid var(--border-specular);
+  cursor:pointer;user-select:none;
+}
+.ep-method{
+  font-family:var(--font-mono);font-size:9px;font-weight:700;
+  letter-spacing:.09em;padding:3px 9px;border-radius:3px;
+  background:rgba(102,2,60,0.20);color:var(--accent-citron);
+  border:1px solid rgba(202,209,131,0.20);flex-shrink:0;
+}
+.ep-path{
+  font-family:var(--font-mono);font-size:12px;font-weight:600;
+  color:var(--text-primary);flex:1;letter-spacing:.02em;
+}
+.ep-desc{font-size:11.5px;color:var(--text-secondary)}
+.ep-body{padding:20px 20px 20px}
+.ep-section{margin-bottom:16px}
+.ep-section:last-child{margin-bottom:0}
+.ep-sect-label{
+  font-family:var(--font-mono);font-size:8px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:8px;
+}
+.code-block{
+  font-family:var(--font-mono);font-size:10.5px;line-height:1.7;
+  color:rgba(236,238,240,0.70);
+  background:rgba(3,3,5,0.60);
+  border:1px solid var(--border-specular);
+  border-radius:6px;padding:14px 16px;
+  overflow-x:auto;white-space:pre;
+  position:relative;
+}
+.code-block::-webkit-scrollbar{height:3px}
+.code-block::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:1px}
+.copy-btn{
+  position:absolute;top:8px;right:8px;
+  font-family:var(--font-mono);font-size:8px;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;
+  padding:3px 8px;border-radius:3px;
+  background:var(--bg-glass-elevated);
+  border:1px solid var(--border-specular);
+  color:var(--text-secondary);cursor:pointer;
+  transition:color .15s,background .15s;
+}
+.copy-btn:hover{color:var(--text-primary);background:var(--bg-glass-high)}
+.copy-btn.copied{color:var(--accent)}
+.param-table{width:100%;border-collapse:collapse}
+.param-table th{
+  font-family:var(--font-mono);font-size:8px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--text-muted);padding:0 12px 7px;text-align:left;
+  border-bottom:1px solid var(--border-specular);
+}
+.param-table td{
+  font-size:11.5px;padding:8px 12px;
+  border-bottom:1px solid rgba(255,255,255,0.03);
+  vertical-align:top;
+}
+.param-table tr:last-child td{border-bottom:none}
+.param-name{font-family:var(--font-mono);color:var(--accent);font-size:11px}
+.param-type{font-family:var(--font-mono);font-size:10px;color:var(--text-muted)}
+.param-desc{color:var(--text-secondary)}
+
+/* ══════════════════════════
+   PANEL 03 — ARCHITECTURE
+══════════════════════════ */
+#panel-03{padding:32px 56px 64px}
+
+.arch-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:900px}
+.arch-card{
+  background:var(--bg-glass-layer);
+  border:1px solid var(--border-specular);
+  border-top:1px solid var(--border-top-light);
+  border-radius:10px;
+  box-shadow:var(--shadow-3d);
+  backdrop-filter:var(--blur-core);-webkit-backdrop-filter:var(--blur-core);
+  padding:22px 22px 20px;
+  transform:perspective(1000px) translateZ(0);
+  transition:transform .2s var(--ease-spring),background .2s;
+}
+.arch-card:hover{background:var(--bg-glass-elevated);transform:perspective(1000px) translateZ(6px)}
+.arch-card-full{grid-column:1/-1}
+.arch-tag{
+  font-family:var(--font-mono);font-size:8px;font-weight:700;
+  letter-spacing:.15em;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:10px;
+}
+.arch-title{
+  font-size:13.5px;font-weight:600;letter-spacing:-.03em;
+  color:var(--text-primary);margin-bottom:10px;
+}
+.arch-body{font-size:11.5px;color:var(--text-secondary);line-height:1.65}
+
+.invariant{
+  display:flex;flex-direction:column;gap:0;
+  margin-top:8px;
+  border:1px solid var(--border-specular);border-radius:6px;
+  overflow:hidden;
+}
+.inv-row{
+  display:flex;align-items:flex-start;gap:0;
+  border-bottom:1px solid rgba(255,255,255,0.03);
+}
+.inv-row:last-child{border-bottom:none}
+.inv-label{
+  font-family:var(--font-mono);font-size:8.5px;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;
+  color:var(--text-muted);
+  padding:9px 12px;min-width:120px;flex-shrink:0;
+  border-right:1px solid var(--border-specular);
+  background:rgba(3,3,5,0.30);
+}
+.inv-val{
+  font-family:var(--font-mono);font-size:10.5px;
+  color:var(--text-secondary);
+  padding:9px 12px;line-height:1.5;
+}
+.inv-val.accent{color:var(--accent)}
+.constraint{
+  font-family:var(--font-mono);font-size:8.5px;font-weight:700;
+  letter-spacing:.07em;text-transform:uppercase;
+  color:var(--accent-tyrian);margin-right:6px;
+  opacity:.85;
+}
+.failmode{
+  font-family:var(--font-mono);font-size:8.5px;font-weight:700;
+  letter-spacing:.07em;text-transform:uppercase;
+  color:var(--accent-tyrian);margin-right:6px;
+  opacity:.70;
+}
+.zk-scramble{cursor:pointer;font-family:var(--font-mono);transition:color .2s ease}
+.zk-scramble:hover{color:#e2fc34!important}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas" style="position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block"></canvas>
+
+<div id="ribbon">
+  HACKATHON ALPHA
+  <span class="rs">//</span>
+  BYPASS 7-DAY RPC PRUNING
+  <span class="rs">//</span>
+  <a href="docs.html">REST API</a>
+  <span class="rs">//</span>
+  <a href="dashboard.html">LIVE DASHBOARD</a>
+</div>
+
+<div id="shell">
+  <!-- Nav -->
+  <nav id="nav">
+    <div class="logo">
+      <svg class="logo-hex" width="22" height="22" viewBox="0 0 48 48" fill="none">
+        <polygon points="14.5,7.6 33.5,7.6 43,24 33.5,40.4 14.5,40.4 5,24"
+                 stroke="currentColor" stroke-width="2.4" fill="none" stroke-linejoin="round"/>
+        <path d="M24,13 L27,16 L24,19 L21,16 Z" stroke="currentColor" stroke-width="1.6" fill="none"/>
+        <line x1="24" y1="19" x2="15" y2="29" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <line x1="24" y1="19" x2="33" y2="29" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <span class="logo-text">MNEMOX<em>//</em>INGESTION LAYER</span>
+    </div>
+
+    <div class="seg">
+      <div class="seg-inner" id="seg-ctrl">
+        <div class="seg-slide" id="seg-slide"></div>
+        <div class="seg-btn active" data-tab="01">01 // OVERVIEW</div>
+        <div class="seg-btn" data-tab="02">02 // REST REFERENCE</div>
+        <div class="seg-btn" data-tab="03">03 // ARCHITECTURE</div>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <div class="sys-pill">
+        <span class="pulse-dot"></span>
+        TESTNET
+      </div>
+      <a class="nav-dash-link" href="dashboard.html">
+        Dashboard
+        <svg class="btn-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 8h10M9 4l4 4-4 4"/>
+        </svg>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Panels -->
+  <div id="panels">
+
+    <!-- 01 OVERVIEW -->
+    <div class="panel active" id="panel-01">
+      <div class="hero-row">
+      <div class="hero-col-text">
+      <div class="hero-block">
+        <div class="hero-eyebrow">
+          <span class="pulse-dot"></span>
+          Stellar · Soroban · ZK Infrastructure
+        </div>
+        <h1 class="hero-h1">Permanent ZK Merkle proofs<br>for <mark>Soroban</mark> events</h1>
+        <p class="hero-sub">
+          Soroban RPC prunes event logs after <b>7 days</b>.
+          Mnemox streams every Soroban commitment into a depth-20
+          Poseidon BN254 Merkle tree, preserving permanent sibling paths for ZK proof generation
+          regardless of ledger age.
+        </p>
+        <div class="hero-actions">
+          <a class="btn-accent" href="dashboard.html">
+            Open Dashboard
+            <svg class="btn-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 8h10M9 4l4 4-4 4"/>
+            </svg>
+          </a>
+          <div class="btn-glass" onclick="switchTab('02')">
+            REST Reference
+            <svg class="btn-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M3 2h7l3 3v9H3z"/><path d="M10 2v3h3"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="telem">
+          <div class="telem-cell">
+            <span class="telem-key">LEVEL_BOUND</span>
+            <span class="telem-val">20_MAX</span>
+          </div>
+          <div class="telem-cell">
+            <span class="telem-key">CURVE_MODULUS</span>
+            <span class="telem-val zk-scramble" data-value="BN254">BN254</span>
+          </div>
+          <div class="telem-cell">
+            <span class="telem-key">STATE_RETENTION</span>
+            <span class="telem-val">INF</span>
+          </div>
+          <div class="telem-cell">
+            <span class="telem-key">ROOT</span>
+            <span class="telem-val live" id="telem-leaves">— LEAVES</span>
+          </div>
+        </div>
+
+        <div class="root-widget">
+          <div class="root-label-col">
+            <div class="root-label"><span class="pulse-dot"></span>STATE ROOT</div>
+            <div class="root-leaves" id="root-leaves-sub">DEPTH 20 · POSEIDON</div>
+          </div>
+          <div class="root-hash-col">
+            <div class="root-hash zk-scramble" id="root-hash">FETCHING...</div>
+          </div>
+        </div>
+      </div><!-- /hero-block -->
+      </div><!-- /hero-col-text -->
+      <div class="hero-col-video">
+        <div class="video-widget">
+          <canvas id="intro-canvas" width="600" height="500"></canvas>
+        </div>
+      </div><!-- /hero-col-video -->
+      </div><!-- /hero-row -->
+
+      <div class="feat-row">
+        <div class="feat-cell">
+          <div class="feat-tag">01 // Proof Generation</div>
+          <div class="feat-title">Membership Proofs, Query-Time</div>
+          <div class="feat-body">
+            Query any indexed commitment and receive a 20-element Poseidon sibling path
+            compatible with Noir and Circom provers. Proof generation &lt; 1ms.
+          </div>
+          <div class="feat-mono">GET /tree/proof/:commitment</div>
+        </div>
+        <div class="feat-cell">
+          <div class="feat-tag">02 // Cryptography</div>
+          <div class="feat-title">Poseidon BN254, ZK-native</div>
+          <div class="feat-body">
+            Every internal node is a Poseidon hash over the BN254 scalar field.
+            No SHA256 adaptation layers. Proofs slot directly into on-chain Groth16 verifiers.
+          </div>
+          <div class="feat-mono"><span class="zk-scramble" data-value="p = 21888242871...617">p = 21888242871...617</span></div>
+        </div>
+        <div class="feat-cell">
+          <div class="feat-tag">03 // Architecture</div>
+          <div class="feat-title">Cold Boot Rehydration</div>
+          <div class="feat-body">
+            Tree state rebuilds deterministically from SQLite on every restart via
+            <code style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">ORDER BY ledger ASC, id ASC</code>.
+            No external coordination required.
+          </div>
+          <div class="feat-mono">INSERT OR IGNORE · WAL · SERIAL</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 02 REST REFERENCE -->
+    <div class="panel" id="panel-02">
+      <div class="ref-grid">
+
+        <div class="endpoint-card">
+          <div class="ep-head">
+            <span class="ep-method">GET</span>
+            <span class="ep-path">/health</span>
+            <span class="ep-desc">System status and ingestion metrics</span>
+          </div>
+          <div class="ep-body">
+            <div class="ep-section">
+              <div class="ep-sect-label">Response 200</div>
+              <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">COPY</button>{
+  "status":          "ok",
+  "indexed_events":  237,
+  "latest_ledger":   3041173,
+  "network":         "testnet",
+  "started_at":      "2026-06-12T03:41:32Z",
+  "uptime_seconds":  86400
+}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="endpoint-card">
+          <div class="ep-head">
+            <span class="ep-method">GET</span>
+            <span class="ep-path">/tree/root</span>
+            <span class="ep-desc">Current Merkle root and leaf count</span>
+          </div>
+          <div class="ep-body">
+            <div class="ep-section">
+              <div class="ep-sect-label">Response 200</div>
+              <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">COPY</button>{
+  "root":          "0x1a2b3c...f09e",
+  "leaf_count":    237,
+  "latest_ledger": 3041173,
+  "depth":         20
+}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="endpoint-card">
+          <div class="ep-head">
+            <span class="ep-method">GET</span>
+            <span class="ep-path">/tree/proof/:commitment</span>
+            <span class="ep-desc">20-element Poseidon sibling path for any indexed commitment</span>
+          </div>
+          <div class="ep-body">
+            <div class="ep-section">
+              <div class="ep-sect-label">Path Parameters</div>
+              <table class="param-table">
+                <thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td class="param-name">commitment</td>
+                    <td class="param-type">hex string</td>
+                    <td class="param-desc">64-char BN254 scalar field element (with or without 0x prefix). Max 130 chars.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="ep-section">
+              <div class="ep-sect-label">Response 200</div>
+              <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">COPY</button>{
+  "commitment":           "0xabc123...def",
+  "leaf_index":           42,
+  "root":                 "0x1a2b3c...f09e",
+  "path": [
+    "0x0000...0000",
+    "0x7f3a...1bc2",
+    ...
+  ],
+  "path_indices":         [0,1,0,0,1,0,0,1,0,0,1,0,1,0,0,1,0,0,0,1],
+  "event_ledger":         3041100,
+  "event_ledger_timestamp":"2026-06-10T12:00:00Z"
+}</div>
+            </div>
+            <div class="ep-section">
+              <div class="ep-sect-label">Error Responses</div>
+              <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">COPY</button>404  {"error": "commitment not found"}
+400  {"error": "commitment exceeds maximum length"}
+400  {"error": "commitment must be a hex string"}
+429  {"error": "rate limit exceeded"}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="endpoint-card">
+          <div class="ep-head">
+            <span class="ep-method">GET</span>
+            <span class="ep-path">/events</span>
+            <span class="ep-desc">Paginated raw event log from SQLite</span>
+          </div>
+          <div class="ep-body">
+            <div class="ep-section">
+              <div class="ep-sect-label">Query Parameters</div>
+              <table class="param-table">
+                <thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td class="param-name">contract</td>
+                    <td class="param-type">string</td>
+                    <td class="param-desc">Soroban contract ID filter (optional)</td>
+                  </tr>
+                  <tr>
+                    <td class="param-name">limit</td>
+                    <td class="param-type">int</td>
+                    <td class="param-desc">Max results per page (default 50, max 200)</td>
+                  </tr>
+                  <tr>
+                    <td class="param-name">offset</td>
+                    <td class="param-type">int</td>
+                    <td class="param-desc">Pagination cursor (default 0)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="ep-section">
+              <div class="ep-sect-label">Response 200</div>
+              <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">COPY</button>{
+  "events": [
+    {
+      "id":          "a1b2c3d4",
+      "type":        "new_commitment_event",
+      "value":       "0xabc123...def",
+      "contract_id": "CB3A7O...XY5",
+      "ledger":      3041100,
+      "created_at":  "2026-06-10T12:00:00Z"
+    }
+  ],
+  "total":  237,
+  "limit":  50,
+  "offset": 0
+}</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 03 ARCHITECTURE -->
+    <div class="panel" id="panel-03">
+      <div class="arch-grid">
+
+        <div class="arch-card">
+          <div class="arch-tag">Cryptographic Core</div>
+          <div class="arch-title">Poseidon BN254 Incremental Merkle Tree</div>
+          <div class="invariant">
+            <div class="inv-row">
+              <div class="inv-label">DEPTH</div>
+              <div class="inv-val accent">20 levels · 2²⁰ max leaves</div>
+            </div>
+            <div class="inv-row">
+              <div class="inv-label">HASH_FN</div>
+              <div class="inv-val">Poseidon over BN254 scalar field</div>
+            </div>
+            <div class="inv-row">
+              <div class="inv-label">MODULUS</div>
+              <div class="inv-val accent"><span class="zk-scramble" data-value="21888242871839275222246405745257275088548364400416034343698204186575808495617">21888242871839275222246405745257275088548364400416034343698204186575808495617</span></div>
+            </div>
+            <div class="inv-row">
+              <div class="inv-label">INSERT</div>
+              <div class="inv-val">filledSubtrees pattern · O(depth) per leaf</div>
+            </div>
+            <div class="inv-row">
+              <div class="inv-label">CONSTRAINT</div>
+              <div class="inv-val"><span class="constraint">CONSTRAINT //</span>Insert-only. No deletion. Gaps are permanent.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="arch-card">
+          <div class="arch-tag">Persistence Layer</div>
+          <div class="arch-title">SQLite WAL · Single-Writer Serialization</div>
+          <div class="invariant">
+            <div class="inv-row">
+              <div class="inv-label">MODE</div>
+              <div class="inv-val accent">WAL · journal_mode=WAL</div>
+            </div>
+            <div class="inv-row">
+              <div class="inv-label">WRITERS</div>
+              <div class="inv-val">SetMaxOpenConns(1) · serialized</div>
+            </div>
+            <div class="inv-row">
+              <div class="inv-label">IDEMPOTENT</div>
+              <div class="inv-val">INSERT OR IGNORE on events.id PK</div>
+            </div>
+            <div class="inv-row">
+              <div class="inv-label">BATCH</div>
+              <div class="inv-val">Cursor + events in single transaction</div>
+            </div>
+            <div class="inv-row">
+              <div class="inv-label">FAILMODE</div>
+              <div class="inv-val"><span class="failmode">FAILMODE //</span>Ephemeral disk → Cold Boot Rehydration on wake</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="arch-card">
+          <div class="arch-tag">Rehydration Engine</div>
+          <div class="arch-title">Cold Boot Deterministic Rebuild</div>
+          <div class="arch-body" style="margin-bottom:12px">
+            On every restart, <code style="font-family:var(--font-mono);font-size:10px;color:var(--accent)">rebuildTree()</code> replays all SQLite leaves in strict ledger order.
+            API is blocked until rehydration completes. Tree state is identical to pre-restart state.
+          </div>
+          <div class="invariant">
+            <div class="inv-row">
+              <div class="inv-label">ORDER</div>
+              <div class="inv-val accent">ORDER BY ledger ASC, id ASC</div>
+            </div>
+            <div class="inv-row">
+              <div class="inv-label">GUARANTEE</div>
+              <div class="inv-val">Root is deterministic given same leaf sequence</div>
+            </div>
+            <div class="inv-row">
+              <div class="inv-label">CONSTRAINT</div>
+              <div class="inv-val"><span class="constraint">CONSTRAINT //</span>START_LEDGER is a one-time decision. Immutable post-deploy.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="arch-card">
+          <div class="arch-tag">API Defense</div>
+          <div class="arch-title">Rate Limiting · Input Validation · Timeouts</div>
+          <div class="invariant">
+            <div class="inv-row">
+              <div class="inv-label">RATE_LIMIT</div>
+              <div class="inv-val">60 burst / 30 rps · token-bucket</div>
+            </div>
+            <div class="inv-row">
+              <div class="inv-label">INPUT</div>
+              <div class="inv-val">130-char bound + hex whitelist on commitment</div>
+            </div>
+            <div class="inv-row">
+              <div class="inv-label">TIMEOUTS</div>
+              <div class="inv-val">Read 10s · Write 30s · Idle 60s</div>
+            </div>
+            <div class="inv-row">
+              <div class="inv-label">FIELD_CHK</div>
+              <div class="inv-val accent">Rejects commitment ≥ BN254 scalar modulus</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /panels -->
+</div><!-- /shell -->
+
+<script>
+// ── Tab system ──
+const tabs = document.querySelectorAll('.seg-btn');
+const panels = document.querySelectorAll('.panel');
+const slide = document.getElementById('seg-slide');
+
+function switchTab(id) {
+  tabs.forEach(b => {
+    const active = b.dataset.tab === id;
+    b.classList.toggle('active', active);
+    if (active) posSlide(b);
+  });
+  panels.forEach(p => {
+    const active = p.id === 'panel-' + id;
+    p.classList.toggle('active', active);
+  });
+}
+
+function posSlide(btn) {
+  slide.style.left  = btn.offsetLeft + 'px';
+  slide.style.width = btn.offsetWidth + 'px';
+}
+
+tabs.forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+
+  // Hover preview: slide indicator to hovered tab, restore on leave
+  btn.addEventListener('pointerenter', () => posSlide(btn));
+});
+document.getElementById('seg-ctrl').addEventListener('pointerleave', () => {
+  const active = document.querySelector('.seg-btn.active');
+  if (active) posSlide(active);
+});
+
+// Position slide on load
+requestAnimationFrame(() => {
+  const active = document.querySelector('.seg-btn.active');
+  if (active) posSlide(active);
+});
+window.addEventListener('resize', () => {
+  const active = document.querySelector('.seg-btn.active');
+  if (active) posSlide(active);
+});
+
+// ── Copy buttons ──
+function copyCode(btn) {
+  const block = btn.parentElement;
+  const text = block.innerText.replace(/^COPY\n?/, '').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'COPIED';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+// ── Live root ──
+async function fetchRoot() {
+  try {
+    const d = await fetch('/tree/root').then(r => r.json());
+    if (d.root) {
+      const rootEl = document.getElementById('root-hash');
+      rootEl.textContent = d.root;
+      rootEl.setAttribute('data-value', d.root);
+      const n = Number(d.leaf_count || 0).toLocaleString();
+      document.getElementById('root-leaves-sub').textContent = n + ' LEAVES · DEPTH 20';
+      document.getElementById('telem-leaves').textContent = n + ' LEAVES';
+    }
+  } catch(e) {
+    document.getElementById('root-hash').textContent = 'UNAVAILABLE';
+  }
+}
+fetchRoot();
+setInterval(fetchRoot, 7000);
+
+// ── Cinematic canvas background ──
+(function(){
+  const cv = document.getElementById('bg-canvas');
+  const cx = cv.getContext('2d');
+  let W, H, t = 0;
+
+  // Orbs: center base (cx,cy), amplitude (ax,ay), period multipliers, radius, color
+  const orbs = [
+    // Large Tyrian anchors
+    { bx:.50, by:.10, ax:.28, ay:.22, px:1.00, py:0.70, ph:0.00, r:.42, c:[102,2,60],    a:.38 },
+    { bx:.12, by:.72, ax:.20, ay:.18, px:0.65, py:1.10, ph:1.57, r:.36, c:[102,2,60],    a:.28 },
+    { bx:.88, by:.80, ax:.18, ay:.24, px:1.20, py:0.80, ph:3.14, r:.38, c:[102,2,60],    a:.24 },
+    { bx:.72, by:.30, ax:.24, ay:.16, px:0.90, py:1.30, ph:0.80, r:.30, c:[80,2,48],     a:.20 },
+    // Subtle citron glints
+    { bx:.30, by:.45, ax:.14, ay:.10, px:1.40, py:0.90, ph:2.10, r:.18, c:[202,209,131], a:.05 },
+    { bx:.80, by:.15, ax:.10, ay:.12, px:1.10, py:1.50, ph:4.00, r:.14, c:[202,209,131], a:.04 },
+  ];
+
+  // Particles
+  const pts = Array.from({length:55}, () => ({
+    x: Math.random(), y: Math.random(),
+    s: 0.6 + Math.random() * 1.2,
+    sp: 0.00004 + Math.random() * 0.00008,
+    o: 0.04 + Math.random() * 0.14,
+    d: Math.random() * Math.PI * 2,
+  }));
+
+  function resize() {
+    W = cv.width  = window.innerWidth;
+    H = cv.height = window.innerHeight;
+  }
+
+  function draw() {
+    t += 0.004;
+    cx.clearRect(0, 0, W, H);
+
+    // Dark ink base
+    cx.fillStyle = '#030305';
+    cx.fillRect(0, 0, W, H);
+
+    // Orbs
+    for (const o of orbs) {
+      const x = (o.bx + o.ax * Math.sin(t * o.px + o.ph)) * W;
+      const y = (o.by + o.ay * Math.cos(t * o.py + o.ph)) * H;
+      const r = o.r * Math.min(W, H);
+      const g = cx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0,   `rgba(${o.c[0]},${o.c[1]},${o.c[2]},${o.a})`);
+      g.addColorStop(0.45,`rgba(${o.c[0]},${o.c[1]},${o.c[2]},${(o.a*0.3).toFixed(3)})`);
+      g.addColorStop(1,   `rgba(${o.c[0]},${o.c[1]},${o.c[2]},0)`);
+      cx.fillStyle = g;
+      cx.fillRect(0, 0, W, H);
+    }
+
+    // Floating particles
+    for (const p of pts) {
+      p.y -= p.sp;
+      p.x += Math.sin(t * 0.8 + p.d) * 0.00018;
+      if (p.y < -0.01) { p.y = 1.01; p.x = Math.random(); }
+      cx.beginPath();
+      cx.arc(p.x * W, p.y * H, p.s, 0, Math.PI * 2);
+      cx.fillStyle = `rgba(202,209,131,${p.o})`;
+      cx.fill();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  draw();
+})();
+</script>
+
+<script>
+/* ── Intro canvas animation (600×500 logical, 2× DPR) ── */
+(function(){
+  var cv=document.getElementById('intro-canvas');
+  if(!cv)return;
+  var ctx=cv.getContext('2d');
+  var LW=600,LH=500;
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.width=LW*dpr;cv.height=LH*dpr;
+  ctx.scale(dpr,dpr);
+
+  var CIT='#CAD183',BG='#030305',MUT='#2E3340';
+
+  /* Tree nodes */
+  var N={
+    root:{x:300,y:70, r:14},
+    mL:{x:148,y:200,r:10},mR:{x:452,y:200,r:10},
+    l0:{x:72, y:338,r:8}, l1:{x:224,y:338,r:8},
+    l2:{x:376,y:338,r:8}, l3:{x:528,y:338,r:8}
+  };
+  var PIPE_Y=428, DUR=20000;
+  var t0=null;
+
+  function eo(t){return 1-Math.pow(1-Math.max(0,Math.min(1,t)),3);}
+  function ph(t,s,e){return Math.max(0,Math.min(1,(t-s)/(e-s)));}
+  function lerp(a,b,t){return a+(b-a)*t;}
+
+  function line(x1,y1,x2,y2,prog,col,w,glow){
+    var len=Math.hypot(x2-x1,y2-y1), cp=Math.max(0,Math.min(1,prog));
+    if(cp<=0)return;
+    if(glow){
+      ctx.save();ctx.shadowColor=CIT;ctx.shadowBlur=14;
+      ctx.strokeStyle='rgba(202,209,131,0.24)';ctx.lineWidth=w*4;ctx.lineCap='round';
+      ctx.setLineDash([len]);ctx.lineDashOffset=len*(1-cp);
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+      ctx.restore();
+    }
+    ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';
+    ctx.setLineDash([len]);ctx.lineDashOffset=len*(1-cp);
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function node(n,sc,stroke,glow,lit){
+    var r=n.r*Math.max(0,sc);if(r<=0)return;
+    if(glow){
+      ctx.save();ctx.shadowColor=CIT;ctx.shadowBlur=18;
+      ctx.fillStyle='rgba(202,209,131,0.11)';
+      ctx.beginPath();ctx.arc(n.x,n.y,r*2.3,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle=BG;ctx.strokeStyle=stroke;ctx.lineWidth=1.8;
+    ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);ctx.fill();ctx.stroke();
+    if(lit){
+      ctx.save();ctx.shadowColor=CIT;ctx.shadowBlur=10;
+      ctx.fillStyle=CIT;
+      ctx.beginPath();ctx.arc(n.x,n.y,r*0.42,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function tick(now){
+    if(!t0)t0=now;
+    var t=(now-t0)%DUR/DUR; /* 0..1 */
+
+    ctx.fillStyle=BG;ctx.fillRect(0,0,LW,LH);
+    /* Tyrian glow */
+    var g=ctx.createRadialGradient(300,248,0,300,248,310);
+    g.addColorStop(0,'rgba(102,2,60,0.27)');g.addColorStop(1,'transparent');
+    ctx.fillStyle=g;ctx.fillRect(0,0,LW,LH);
+
+    /* ── PHASE 1: PIPELINE (t 0→0.20) ── */
+    var t1=ph(t,0,0.20);
+    if(t<0.22){
+      var pFade=1-eo(ph(t,0.18,0.22));
+      ctx.strokeStyle='rgba(202,209,131,0.13)';ctx.lineWidth=1;
+      ctx.setLineDash([5,9]);
+      ctx.beginPath();ctx.moveTo(30,PIPE_Y);ctx.lineTo(570,PIPE_Y);ctx.stroke();
+      ctx.setLineDash([]);
+
+      var bases=[90,210,300,390,510], spds=[0.9,0.7,0,1.1,1.3];
+      for(var i=0;i<5;i++){
+        var isCap=i===2;
+        var x=isCap?300:(bases[i]+t1*spds[i]*360)%610+16;
+        var capG=isCap?eo(ph(t1,0.45,0.85)):0;
+        if(isCap&&capG>0){
+          ctx.save();ctx.shadowColor=CIT;ctx.shadowBlur=capG*18;
+          ctx.fillStyle='rgba(202,209,131,'+capG*0.12+')';
+          ctx.beginPath();ctx.arc(x,PIPE_Y,14,0,Math.PI*2);ctx.fill();
+          ctx.restore();
+        }
+        ctx.fillStyle=BG;
+        ctx.strokeStyle=isCap&&capG>0.3?CIT:'rgba(202,209,131,'+(isCap?0.50:0.22)+')';
+        ctx.lineWidth=1.6;
+        ctx.beginPath();ctx.arc(x,PIPE_Y,isCap?9:7,0,Math.PI*2);ctx.fill();ctx.stroke();
+        if(isCap&&capG>0.5){
+          ctx.save();ctx.shadowColor=CIT;ctx.shadowBlur=8;
+          ctx.fillStyle=CIT;
+          ctx.beginPath();ctx.arc(x,PIPE_Y,4,0,Math.PI*2);ctx.fill();
+          ctx.restore();
+        }
+      }
+      ctx.fillStyle='rgba(46,51,64,'+pFade+')';
+      ctx.font='700 10px "JetBrains Mono",monospace';
+      ctx.textAlign='center';
+      ctx.fillText('SOROBAN EVENT STREAM',300,PIPE_Y+26);
+    }
+
+    /* ── PHASE 2: TREE BUILD (t 0.20→0.60) ── */
+    var t2=ph(t,0.20,0.60);
+    if(t>=0.18&&t<0.62){
+      var tFade=Math.min(eo(ph(t,0.18,0.23)),1-eo(ph(t,0.59,0.62)));
+      var lm=eo(ph(t2,0.30,0.55)), lmr=eo(ph(t2,0.36,0.58));
+      var mr=eo(ph(t2,0.62,0.82));
+      var leafScs=[eo(ph(t2,0,0.12)),eo(ph(t2,0.08,0.20)),eo(ph(t2,0.16,0.28)),eo(ph(t2,0.24,0.36))];
+      var msc=eo(ph(t2,0.55,0.67)), rsc=eo(ph(t2,0.82,1.0));
+
+      line(N.l0.x,N.l0.y,N.mL.x,N.mL.y,lm, 'rgba(202,209,131,'+(0.44*tFade)+')',1.6,false);
+      line(N.l1.x,N.l1.y,N.mL.x,N.mL.y,lm, 'rgba(202,209,131,'+(0.44*tFade)+')',1.6,false);
+      line(N.l2.x,N.l2.y,N.mR.x,N.mR.y,lmr,'rgba(202,209,131,'+(0.44*tFade)+')',1.6,false);
+      line(N.l3.x,N.l3.y,N.mR.x,N.mR.y,lmr,'rgba(202,209,131,'+(0.44*tFade)+')',1.6,false);
+      line(N.mL.x,N.mL.y,N.root.x,N.root.y,mr,'rgba(202,209,131,'+(0.50*tFade)+')',1.8,false);
+      line(N.mR.x,N.mR.y,N.root.x,N.root.y,mr,'rgba(202,209,131,'+(0.50*tFade)+')',1.8,false);
+
+      var ls=[N.l0,N.l1,N.l2,N.l3];
+      for(var j=0;j<4;j++) node(ls[j],leafScs[j]*tFade,'rgba(202,209,131,'+(0.55*tFade)+')',false,false);
+      node(N.mL,msc*tFade,'rgba(202,209,131,'+(0.65*tFade)+')',false,false);
+      node(N.mR,msc*tFade,'rgba(202,209,131,'+(0.65*tFade)+')',false,false);
+
+      if(rsc>0){
+        [1.8,1.2].forEach(function(k){
+          ctx.strokeStyle='rgba(202,209,131,'+(0.07*tFade)+')';ctx.lineWidth=1;
+          ctx.beginPath();ctx.arc(N.root.x,N.root.y,N.root.r*k*rsc,0,Math.PI*2);ctx.stroke();
+        });
+        node(N.root,rsc*tFade,'rgba(202,209,131,'+(tFade)+')',rsc>0.8,rsc>0.8);
+      }
+
+      /* leaf counter */
+      var cnt=Math.floor(lerp(0,117,Math.min(1,t2/0.95)));
+      var cop=eo(ph(t2,0.05,0.20))*tFade;
+      if(cop>0){
+        ctx.save();ctx.globalAlpha=cop;
+        ctx.fillStyle=CIT;ctx.font='700 80px "JetBrains Mono",monospace';
+        ctx.textAlign='right';
+        ctx.fillText(String(cnt).padStart(3,'0'),554,95);
+        ctx.fillStyle=MUT;ctx.font='700 11px "JetBrains Mono",monospace';
+        ctx.fillText('LEAVES',554,111);
+        ctx.restore();
+      }
+    }
+
+    /* ── PHASE 3: PROOF (t 0.60→1.0) ── */
+    var t3=ph(t,0.60,1.0);
+    if(t>=0.58){
+      var p3Fade=eo(ph(t,0.58,0.63));
+
+      /* full dim tree */
+      [[N.l0,N.mL],[N.l1,N.mL],[N.l2,N.mR],[N.l3,N.mR]].forEach(function(e){
+        line(e[0].x,e[0].y,e[1].x,e[1].y,1,'rgba(202,209,131,'+(0.10*p3Fade)+')',1.4,false);
+      });
+      [[N.mL,N.root],[N.mR,N.root]].forEach(function(e){
+        line(e[0].x,e[0].y,e[1].x,e[1].y,1,'rgba(202,209,131,'+(0.10*p3Fade)+')',1.6,false);
+      });
+      [N.l0,N.l1,N.l2,N.l3].forEach(function(n){node(n,p3Fade,'rgba(202,209,131,'+(0.16*p3Fade)+')',false,false);});
+      node(N.mL,p3Fade,'rgba(202,209,131,'+(0.16*p3Fade)+')',false,false);
+      node(N.mR,p3Fade,'rgba(202,209,131,'+(0.16*p3Fade)+')',false,false);
+      node(N.root,p3Fade,'rgba(202,209,131,'+(0.16*p3Fade)+')',false,false);
+
+      /* laser sweep */
+      var lx=lerp(-20,630,eo(ph(t3,0,0.35)));
+      if(lx>-20&&lx<640){
+        var lg=ctx.createLinearGradient(lx-36,0,lx+36,0);
+        lg.addColorStop(0,'rgba(202,209,131,0)');
+        lg.addColorStop(0.35,'rgba(202,209,131,0.06)');
+        lg.addColorStop(0.5,'rgba(202,209,131,0.20)');
+        lg.addColorStop(0.65,'rgba(202,209,131,0.06)');
+        lg.addColorStop(1,'rgba(202,209,131,0)');
+        ctx.fillStyle=lg;ctx.fillRect(lx-36,0,72,LH);
+      }
+
+      /* proof path l0→mL→root lights up as laser passes */
+      var l0lit=lx>N.l0.x, mLlit=lx>N.mL.x, rootlit=lx>N.root.x;
+      if(l0lit&&mLlit) line(N.l0.x,N.l0.y,N.mL.x,N.mL.y,1,CIT,2.2,true);
+      if(mLlit&&rootlit) line(N.mL.x,N.mL.y,N.root.x,N.root.y,1,CIT,2.4,true);
+      if(l0lit)  node(N.l0,  p3Fade,CIT,true,true);
+      if(mLlit)  node(N.mL,  p3Fade,CIT,true,true);
+      if(rootlit){
+        var rp=eo(ph(t3,(N.root.x/630)*0.35,0.44));
+        [2.0,1.4].forEach(function(k){
+          ctx.strokeStyle='rgba(202,209,131,'+(0.12*rp*p3Fade)+')';ctx.lineWidth=1;
+          ctx.beginPath();ctx.arc(N.root.x,N.root.y,N.root.r*k*rp,0,Math.PI*2);ctx.stroke();
+        });
+        node(N.root,p3Fade,CIT,true,true);
+      }
+
+      /* "PROVING STATE // VERIFIED" */
+      var txtT=eo(ph(t3,0.38,0.54))*(1-eo(ph(t3,0.88,1.0)));
+      if(txtT>0){
+        ctx.save();ctx.globalAlpha=txtT*p3Fade;
+        ctx.fillStyle=CIT;ctx.font='700 12px "JetBrains Mono",monospace';
+        ctx.textAlign='center';ctx.fillText('PROVING STATE // VERIFIED',300,36);
+        ctx.restore();
+      }
+    }
+
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
+
+<script>
+/* ── ZK Scramble Effect ── */
+document.querySelectorAll('.zk-scramble').forEach(function(el) {
+  var init = el.getAttribute('data-value') || el.textContent.trim();
+  el.setAttribute('data-value', init);
+  var chars = '0123456789ABCDEF⚡\xD7\xD8';
+  var iv = null;
+  el.addEventListener('mouseenter', function() {
+    var src = el.getAttribute('data-value') || el.textContent.trim();
+    var iter = 0;
+    var step = Math.max(1 / 3, src.length / 30);
+    clearInterval(iv);
+    iv = setInterval(function() {
+      el.textContent = src.split('').map(function(_, i) {
+        return i < iter ? src[i] : chars[Math.floor(Math.random() * chars.length)];
+      }).join('');
+      if (iter >= src.length) { clearInterval(iv); el.textContent = src; }
+      iter += step;
+    }, 25);
+  });
+  el.addEventListener('mouseleave', function() {
+    clearInterval(iv);
+    el.textContent = el.getAttribute('data-value');
+  });
+});
+</script>
+</body>
+</html>

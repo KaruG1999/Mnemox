@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>MNEMOX // API REFERENCE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg-base:          #030305;
+  --bg-glass-layer:   rgba(26,2,15,0.25);
+  --bg-glass-elevated:rgba(38,4,22,0.50);
+  --bg-glass-high:    rgba(52,6,32,0.75);
+  --accent:           #CAD183;
+  --accent-citron:    #CAD183;
+  --accent-tyrian:    #66023C;
+  --accent-dim:       rgba(202,209,131,0.06);
+  --accent-glow:      rgba(202,209,131,0.14);
+  --text-primary:     #ECEEF0;
+  --text-secondary:   #555D6B;
+  --text-muted:       #2E3340;
+  --color-err:        #E85D75;
+  --color-err-dim:    rgba(232,93,117,0.08);
+  --border-specular:  rgba(255,255,255,0.05);
+  --border-top-light: rgba(255,255,255,0.12);
+  --border-active:    rgba(102,2,60,0.40);
+  --shadow-3d:        0 24px 48px -12px rgba(0,0,0,0.72),inset 0 1px 0 rgba(255,255,255,0.08);
+  --blur-core:        blur(32px) saturate(210%);
+  --ease-spring:      cubic-bezier(0.16,1,0.3,1);
+  --font-mono:        "JetBrains Mono","SF Mono",monospace;
+  --font-ui:          "Inter",system-ui,sans-serif;
+}
+
+html{scroll-behavior:smooth}
+html,body{
+  background:#030305;color:var(--text-primary);
+  font-family:var(--font-ui);font-size:13px;letter-spacing:-0.01em;
+  -webkit-font-smoothing:antialiased;
+}
+body::before{content:none}
+
+/* ── Ribbon ── */
+#ribbon{
+  position:relative;z-index:100;
+  height:30px;background:var(--accent);color:#030305;
+  display:flex;align-items:center;justify-content:center;gap:18px;
+  font-family:var(--font-mono);font-size:9px;font-weight:700;
+  letter-spacing:.13em;text-transform:uppercase;
+  white-space:nowrap;overflow:hidden;
+}
+#ribbon::after{
+  content:'';position:absolute;inset:0;width:50%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);
+  animation:ribbonShimmer 6s linear infinite;pointer-events:none;
+}
+@keyframes ribbonShimmer{0%{transform:translateX(-200%)}100%{transform:translateX(400%)}}
+#ribbon a{color:inherit;text-decoration:none;border-bottom:1px solid rgba(3,3,5,0.30)}
+#ribbon a:hover{border-bottom-color:rgba(3,3,5,0.80)}
+.rs{opacity:.35}
+
+/* ── Nav ── */
+#nav{
+  position:sticky;top:0;z-index:200;
+  height:52px;
+  display:flex;align-items:center;
+  padding:0 40px;
+  border-bottom:1px solid var(--border-specular);
+  background:rgba(3,3,5,0.80);
+  backdrop-filter:var(--blur-core);-webkit-backdrop-filter:var(--blur-core);
+}
+.nav-inner{
+  width:100%;max-width:960px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.logo{display:flex;align-items:center;gap:9px;text-decoration:none}
+.logo-hex{color:var(--accent-citron)}
+.logo-word{
+  font-family:var(--font-mono);font-size:10px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--text-primary);
+}
+.logo-word em{color:var(--text-muted);font-style:normal;margin:0 4px}
+.nav-links{display:flex;align-items:center;gap:6px}
+.nav-ghost{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:5px;
+  font-family:var(--font-mono);font-size:9px;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;
+  color:var(--text-secondary);text-decoration:none;
+  border:1px solid var(--border-specular);
+  transition:color .15s,border-color .15s,background .15s;
+}
+.nav-ghost:hover{color:var(--text-primary);border-color:rgba(255,255,255,0.10);background:rgba(255,255,255,0.03)}
+.nav-cta{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:5px;
+  font-family:var(--font-mono);font-size:9px;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;
+  background:var(--accent);color:#030305;text-decoration:none;
+  transform:perspective(1000px) scale(1);
+  transition:transform 0.2s var(--ease-spring),opacity .15s;
+}
+.nav-cta:hover{opacity:.90;transform:perspective(1000px) scale(1.015)}
+.nav-cta:active{transform:perspective(1000px) scale(0.98)}
+
+/* ── Page ── */
+.page{padding:56px 40px 96px;position:relative;z-index:1}
+.wrap{max-width:960px;margin:0 auto}
+
+/* ── Hero ── */
+.hero-block{margin-bottom:56px;max-width:640px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--font-mono);font-size:8.5px;font-weight:700;
+  letter-spacing:.15em;text-transform:uppercase;
+  color:var(--accent-citron);margin-bottom:20px;
+}
+.hero-h1{
+  font-size:clamp(28px,4vw,46px);font-weight:700;
+  letter-spacing:-.04em;line-height:1.06;
+  color:var(--text-primary);margin-bottom:14px;
+}
+.hero-h1 mark{
+  background:none;
+  background:linear-gradient(110deg,var(--accent-citron) 0%,rgba(202,209,131,0.55) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-sub{font-size:14px;color:var(--text-secondary);line-height:1.7;margin-bottom:24px}
+.base-url{
+  display:inline-flex;align-items:center;gap:12px;
+  padding:10px 16px;border-radius:6px;
+  background:var(--bg-glass-layer);
+  border:1px solid var(--border-specular);
+  border-top:1px solid var(--border-top-light);
+  backdrop-filter:var(--blur-core);
+}
+.base-url-lbl{
+  font-family:var(--font-mono);font-size:8px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);
+}
+.base-url-val{font-family:var(--font-mono);font-size:11px;color:var(--accent-citron)}
+
+/* ── Section heading ── */
+.sec-head{
+  font-family:var(--font-mono);font-size:8px;font-weight:700;
+  letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted);
+  padding-bottom:10px;border-bottom:1px solid var(--border-specular);
+  margin-bottom:20px;margin-top:52px;
+}
+.sec-head:first-child{margin-top:0}
+
+/* ── Info / warning strips ── */
+.strip-row{display:flex;flex-direction:column;gap:8px;margin-bottom:48px}
+.strip{
+  display:flex;align-items:flex-start;gap:14px;
+  padding:12px 16px;border-radius:7px;
+  backdrop-filter:var(--blur-core);
+}
+.strip-info{
+  background:rgba(102,2,60,0.10);
+  border:1px solid rgba(102,2,60,0.28);
+}
+.strip-warn{
+  background:rgba(232,93,117,0.05);
+  border:1px solid rgba(232,93,117,0.18);
+}
+.strip-mark{
+  font-family:var(--font-mono);font-size:8.5px;font-weight:700;
+  letter-spacing:.10em;text-transform:uppercase;
+  padding:3px 8px;border-radius:3px;flex-shrink:0;margin-top:1px;
+}
+.strip-info .strip-mark{background:rgba(102,2,60,0.25);color:var(--accent-citron);border:1px solid rgba(202,209,131,0.20)}
+.strip-warn .strip-mark{background:rgba(232,93,117,0.10);color:var(--color-err);border:1px solid rgba(232,93,117,0.22)}
+.strip-text{font-size:12px;color:var(--text-secondary);line-height:1.65}
+.strip-text strong{color:var(--text-primary);font-weight:600}
+.strip-text code{font-family:var(--font-mono);font-size:10.5px;color:var(--accent-citron)}
+
+/* ── Endpoint cards ── */
+.ep-list{display:flex;flex-direction:column;gap:14px;margin-bottom:56px}
+.ep-card{
+  background:var(--bg-glass-layer);
+  border:1px solid var(--border-specular);
+  border-top:1px solid var(--border-top-light);
+  border-radius:10px;
+  box-shadow:var(--shadow-3d);
+  backdrop-filter:var(--blur-core);-webkit-backdrop-filter:var(--blur-core);
+  overflow:hidden;
+  transform:perspective(1000px) translateZ(0);
+  transition:background .18s,transform .18s var(--ease-spring),box-shadow .18s;
+}
+.ep-card:hover{
+  background:var(--bg-glass-elevated);
+  transform:perspective(1000px) translateZ(4px);
+  box-shadow:0 24px 48px -12px rgba(0,0,0,0.80),inset 0 1px 0 rgba(255,255,255,0.10),0 0 0 1px var(--border-active);
+}
+.ep-head{
+  display:flex;align-items:center;gap:12px;
+  padding:13px 18px;
+  border-bottom:1px solid var(--border-specular);
+}
+.ep-method{
+  font-family:var(--font-mono);font-size:9px;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;
+  padding:3px 9px;border-radius:3px;
+  background:rgba(102,2,60,0.20);color:var(--accent-citron);
+  border:1px solid rgba(202,209,131,0.20);flex-shrink:0;
+}
+.ep-path{
+  font-family:var(--font-mono);font-size:12px;font-weight:600;
+  color:var(--text-primary);flex:1;letter-spacing:.02em;
+}
+.ep-path-param{color:var(--accent-citron)}
+.ep-desc{font-size:11px;color:var(--text-secondary)}
+.ep-body{padding:18px 18px;display:flex;flex-direction:column;gap:16px}
+
+/* ── Code block ── */
+.code-frame{
+  background:rgba(3,3,5,0.70);
+  border:1px solid var(--border-specular);
+  border-radius:7px;overflow:hidden;position:relative;
+}
+.code-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 14px;
+  border-bottom:1px solid var(--border-specular);
+  background:rgba(26,2,15,0.40);
+}
+.code-dots{display:flex;gap:5px}
+.cdot{width:9px;height:9px;border-radius:50%;opacity:.55}
+.cdot-r{background:#FF5F57}.cdot-y{background:#FFBD2E}.cdot-g{background:#28C840}
+.code-fname{
+  font-family:var(--font-mono);font-size:9px;
+  color:var(--text-muted);letter-spacing:.06em;
+}
+.copy-btn{
+  position:absolute;top:7px;right:12px;
+  font-family:var(--font-mono);font-size:8px;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;
+  padding:3px 8px;border-radius:3px;
+  background:var(--bg-glass-elevated);
+  border:1px solid var(--border-specular);
+  color:var(--text-secondary);cursor:pointer;
+  transition:color .15s,background .15s;
+}
+.copy-btn:hover{color:var(--text-primary);background:var(--bg-glass-high)}
+.copy-btn.copied{color:var(--accent-citron)}
+.code-body{
+  padding:16px 18px;
+  font-family:var(--font-mono);font-size:11px;line-height:1.75;
+  color:rgba(236,238,240,0.70);
+  overflow-x:auto;white-space:pre;
+}
+.code-body::-webkit-scrollbar{height:3px}
+.code-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.07);border-radius:1px}
+.t-key{color:var(--accent-citron)}
+.t-str{color:#9BE0C0}
+.t-num{color:#E9C06B}
+.t-cmd{color:var(--accent-citron)}
+.t-cmt{color:var(--text-muted);font-style:italic}
+.t-flag{color:var(--text-secondary)}
+
+/* ── Param table ── */
+.param-table{width:100%;border-collapse:collapse}
+.param-table th{
+  font-family:var(--font-mono);font-size:8px;font-weight:700;
+  letter-spacing:.13em;text-transform:uppercase;
+  color:var(--text-muted);padding:0 12px 8px;text-align:left;
+  border-bottom:1px solid var(--border-specular);
+}
+.param-table td{
+  padding:9px 12px;font-size:11.5px;
+  border-bottom:1px solid rgba(255,255,255,0.025);
+  vertical-align:top;line-height:1.5;
+}
+.param-table tr:last-child td{border-bottom:none}
+.param-name{font-family:var(--font-mono);color:var(--accent-citron);font-size:11px}
+.param-type{font-family:var(--font-mono);font-size:10px;color:var(--text-muted)}
+.param-desc{color:var(--text-secondary)}
+.req-yes{font-family:var(--font-mono);font-size:8.5px;font-weight:700;color:var(--accent-citron);letter-spacing:.06em}
+.req-no {font-family:var(--font-mono);font-size:8.5px;font-weight:700;color:var(--text-muted);letter-spacing:.06em}
+
+/* ── Field grid ── */
+.field-grid{display:flex;flex-direction:column;gap:4px}
+.field-row{
+  display:grid;grid-template-columns:170px 110px 1fr;
+  gap:12px;align-items:start;
+  padding:9px 12px;border-radius:5px;
+  background:rgba(3,3,5,0.35);
+  border:1px solid rgba(255,255,255,0.025);
+  font-size:11.5px;
+}
+.field-name{font-family:var(--font-mono);font-size:10.5px;color:var(--accent-citron);font-weight:500}
+.field-type{font-family:var(--font-mono);font-size:9.5px;color:var(--text-muted)}
+.field-desc{color:var(--text-secondary);line-height:1.55}
+
+/* ── Quick start ── */
+.qs-steps{display:flex;flex-direction:column;gap:14px;margin-bottom:56px}
+.step-row{display:flex;gap:14px;align-items:flex-start}
+.step-num{
+  width:28px;height:28px;border-radius:4px;flex-shrink:0;
+  background:rgba(102,2,60,0.20);
+  border:1px solid rgba(202,209,131,0.20);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:9.5px;font-weight:700;
+  color:var(--accent-citron);letter-spacing:.05em;
+}
+.step-body{flex:1;padding-top:4px}
+.step-title{font-size:13.5px;font-weight:600;letter-spacing:-.02em;color:var(--text-primary);margin-bottom:6px}
+.step-desc{font-size:12px;color:var(--text-secondary);line-height:1.65;margin-bottom:10px}
+.step-desc code{font-family:var(--font-mono);font-size:10.5px;color:var(--accent-citron)}
+
+/* ── Footer ── */
+footer{
+  position:relative;z-index:1;
+  border-top:1px solid var(--border-specular);
+  padding:24px 40px;
+  font-family:var(--font-mono);font-size:9px;
+  color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.footer-links{display:flex;gap:20px}
+.footer-links a{color:var(--text-secondary);text-decoration:none}
+.footer-links a:hover{color:var(--text-primary)}
+
+/* Pulse dot */
+.pulse-dot{
+  position:relative;width:6px;height:6px;border-radius:50%;
+  background:var(--accent-citron);flex-shrink:0;display:inline-block;
+}
+.pulse-dot::after{
+  content:'';position:absolute;top:50%;left:50%;
+  width:100%;height:100%;border-radius:50%;
+  background:var(--accent-citron);opacity:.6;
+  animation:statusPulse 2s cubic-bezier(0.16,1,0.3,1) infinite;
+}
+@keyframes statusPulse{
+  0%  {transform:translate(-50%,-50%) scale(1);opacity:.6}
+  100%{transform:translate(-50%,-50%) scale(2.4);opacity:0}
+}
+
+@media(max-width:640px){
+  #nav{padding:0 20px}
+  .page{padding:40px 20px 80px}
+  .field-row{grid-template-columns:1fr 90px}
+  .field-row .field-desc{grid-column:1/-1}
+  footer{flex-direction:column;gap:12px;text-align:center;padding:20px}
+}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas" style="position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block"></canvas>
+
+<div id="ribbon">
+  HACKATHON ALPHA <span class="rs">//</span>
+  ZK MERKLE INDEXER <span class="rs">//</span>
+  <a href="index.html">HOME</a> <span class="rs">//</span>
+  <a href="dashboard.html">LIVE DASHBOARD</a>
+</div>
+
+<nav id="nav">
+  <div class="nav-inner">
+    <a class="logo" href="index.html">
+      <svg class="logo-hex" width="22" height="22" viewBox="0 0 48 48" fill="none">
+        <polygon points="14.5,7.6 33.5,7.6 43,24 33.5,40.4 14.5,40.4 5,24"
+                 stroke="currentColor" stroke-width="2.4" fill="none" stroke-linejoin="round"/>
+        <path d="M24,13 L27,16 L24,19 L21,16 Z" stroke="currentColor" stroke-width="1.6" fill="none"/>
+        <line x1="24" y1="19" x2="15" y2="29" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <line x1="24" y1="19" x2="33" y2="29" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <span class="logo-word">MNEMOX<em>//</em>API REFERENCE</span>
+    </a>
+    <div class="nav-links">
+      <a class="nav-ghost" href="index.html">Home</a>
+      <a class="nav-ghost" href="dashboard.html">Dashboard</a>
+      <a class="nav-cta" href="dashboard.html">
+        Open Live Data
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 8h10M9 4l4 4-4 4"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="wrap">
+
+    <!-- Hero -->
+    <div class="hero-block">
+      <div class="hero-eyebrow">
+        <span class="pulse-dot"></span>
+        &nbsp;REST API · No auth required
+      </div>
+      <h1 class="hero-h1">API <mark>Reference</mark></h1>
+      <p class="hero-sub">
+        Live REST API for permanent Poseidon BN254 Merkle proof access.
+        No authentication on the shared Testnet instance.
+      </p>
+      <div class="base-url">
+        <span class="base-url-lbl">Base URL</span>
+        <span class="base-url-val" id="base-url">https://&lt;your-instance&gt;.onrender.com</span>
+      </div>
+    </div>
+
+    <!-- Rate limits -->
+    <div class="sec-head">Rate Limits &amp; Constraints</div>
+    <div class="strip-row">
+      <div class="strip strip-info">
+        <span class="strip-mark">RATE</span>
+        <div class="strip-text"><strong>30 rps sustained / 60 burst</strong> — Token-bucket middleware enforced globally. Exceeding returns <code>HTTP 429</code> with <code>Retry-After: 1</code>.</div>
+      </div>
+      <div class="strip strip-info">
+        <span class="strip-mark">DATA</span>
+        <div class="strip-text"><strong>Commitments are cryptographic field elements only.</strong> The database stores Poseidon BN254 scalars — no plaintext secrets, no balances, no user data.</div>
+      </div>
+      <div class="strip strip-warn">
+        <span class="strip-mark">COLD</span>
+        <div class="strip-text"><strong>Free Render tier sleeps after 15 min of inactivity.</strong> First request triggers Cold Boot Rehydration — rebuilds the Merkle tree from SQLite. Expect 5–60s depending on indexed leaf count.</div>
+      </div>
+    </div>
+
+    <!-- Endpoints -->
+    <div class="sec-head">Endpoints</div>
+    <div class="ep-list">
+
+      <!-- /health -->
+      <div class="ep-card">
+        <div class="ep-head">
+          <span class="ep-method">GET</span>
+          <span class="ep-path">/health</span>
+          <span class="ep-desc">Node status, indexed event count, uptime</span>
+        </div>
+        <div class="ep-body">
+          <div class="code-frame">
+            <div class="code-bar">
+              <div class="code-dots"><div class="cdot cdot-r"></div><div class="cdot cdot-y"></div><div class="cdot cdot-g"></div></div>
+              <span class="code-fname">response · 200</span>
+              <button class="copy-btn" data-tgt="r-health">COPY</button>
+            </div>
+            <div class="code-body" id="r-health">{
+  <span class="t-key">"status"</span>:          <span class="t-str">"ok"</span>,
+  <span class="t-key">"indexed_events"</span>:  <span class="t-num">237</span>,
+  <span class="t-key">"latest_ledger"</span>:   <span class="t-num">3041173</span>,
+  <span class="t-key">"network"</span>:          <span class="t-str">"testnet"</span>,
+  <span class="t-key">"started_at"</span>:       <span class="t-str">"2026-06-12T03:02:57Z"</span>,
+  <span class="t-key">"uptime_seconds"</span>:   <span class="t-num">3600</span>
+}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- /tree/root -->
+      <div class="ep-card">
+        <div class="ep-head">
+          <span class="ep-method">GET</span>
+          <span class="ep-path">/tree/root</span>
+          <span class="ep-desc">Current Merkle root and leaf count</span>
+        </div>
+        <div class="ep-body">
+          <div class="code-frame">
+            <div class="code-bar">
+              <div class="code-dots"><div class="cdot cdot-r"></div><div class="cdot cdot-y"></div><div class="cdot cdot-g"></div></div>
+              <span class="code-fname">response · 200</span>
+              <button class="copy-btn" data-tgt="r-root">COPY</button>
+            </div>
+            <div class="code-body" id="r-root">{
+  <span class="t-key">"root"</span>:          <span class="t-str">"0xd1cba3c2e9f..."</span>,
+  <span class="t-key">"leaf_count"</span>:    <span class="t-num">237</span>,
+  <span class="t-key">"latest_ledger"</span>: <span class="t-num">3041173</span>,
+  <span class="t-key">"depth"</span>:         <span class="t-num">20</span>
+}</div>
+          </div>
+          <div class="field-grid">
+            <div class="field-row">
+              <span class="field-name">root</span>
+              <span class="field-type">string (hex)</span>
+              <span class="field-desc">Poseidon BN254 Merkle root over all indexed leaves. Matches on-chain contract state.</span>
+            </div>
+            <div class="field-row">
+              <span class="field-name">leaf_count</span>
+              <span class="field-type">int</span>
+              <span class="field-desc">Total commitments inserted into the tree.</span>
+            </div>
+            <div class="field-row">
+              <span class="field-name">latest_ledger</span>
+              <span class="field-type">int</span>
+              <span class="field-desc">Last Stellar ledger sequence fully processed.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- /tree/proof/:commitment -->
+      <div class="ep-card">
+        <div class="ep-head">
+          <span class="ep-method">GET</span>
+          <span class="ep-path">/tree/proof/<span class="ep-path-param">:commitment</span></span>
+          <span class="ep-desc">20-element sibling path + root for any indexed commitment</span>
+        </div>
+        <div class="ep-body">
+          <table class="param-table">
+            <thead><tr><th>Param</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="param-name">:commitment</span></td>
+                <td><span class="param-type">hex string</span></td>
+                <td><span class="req-yes">YES</span></td>
+                <td class="param-desc">64-char BN254 scalar field element. With or without <code style="font-family:var(--font-mono);font-size:10.5px;color:var(--accent-citron)">0x</code> prefix. Max 130 chars.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="code-frame">
+            <div class="code-bar">
+              <div class="code-dots"><div class="cdot cdot-r"></div><div class="cdot cdot-y"></div><div class="cdot cdot-g"></div></div>
+              <span class="code-fname">example · curl</span>
+              <button class="copy-btn" data-tgt="ex-proof-curl">COPY</button>
+            </div>
+            <div class="code-body" id="ex-proof-curl"><span class="t-cmd">curl</span> https://&lt;instance&gt;.onrender.com/tree/proof/2d27b569a7bc3f...</div>
+          </div>
+          <div class="code-frame">
+            <div class="code-bar">
+              <div class="code-dots"><div class="cdot cdot-r"></div><div class="cdot cdot-y"></div><div class="cdot cdot-g"></div></div>
+              <span class="code-fname">response · 200</span>
+              <button class="copy-btn" data-tgt="r-proof">COPY</button>
+            </div>
+            <div class="code-body" id="r-proof">{
+  <span class="t-key">"commitment"</span>:             <span class="t-str">"2d27b569a7bc3f..."</span>,
+  <span class="t-key">"leaf_index"</span>:             <span class="t-num">42</span>,
+  <span class="t-key">"path"</span>:                   <span class="t-flag">[</span><span class="t-str">"0x01b1..."</span>, <span class="t-str">"0x3a9f..."</span>, <span class="t-cmt">/* 20 elements */</span><span class="t-flag">]</span>,
+  <span class="t-key">"path_indices"</span>:           <span class="t-flag">[</span><span class="t-num">0</span>,<span class="t-num">1</span>,<span class="t-num">0</span>,<span class="t-num">0</span>,<span class="t-num">1</span>,<span class="t-num">0</span>,<span class="t-num">0</span>,<span class="t-num">1</span>,<span class="t-num">0</span>,<span class="t-num">0</span>,<span class="t-num">1</span>,<span class="t-num">0</span>,<span class="t-num">1</span>,<span class="t-num">0</span>,<span class="t-num">0</span>,<span class="t-num">1</span>,<span class="t-num">0</span>,<span class="t-num">0</span>,<span class="t-num">0</span>,<span class="t-num">1</span><span class="t-flag">]</span>,
+  <span class="t-key">"root"</span>:                   <span class="t-str">"0xd1cba3c2e9f..."</span>,
+  <span class="t-key">"event_ledger"</span>:           <span class="t-num">3041001</span>,
+  <span class="t-key">"event_ledger_timestamp"</span>: <span class="t-str">"2026-06-04T14:22:11Z"</span>
+}</div>
+          </div>
+          <div class="field-grid">
+            <div class="field-row">
+              <span class="field-name">leaf_index</span>
+              <span class="field-type">int</span>
+              <span class="field-desc">Zero-based leaf position. Use as leaf_index witness input in Noir/Circom circuits.</span>
+            </div>
+            <div class="field-row">
+              <span class="field-name">path</span>
+              <span class="field-type">[]string (hex)</span>
+              <span class="field-desc">20-element Poseidon BN254 sibling hashes ordered bottom-up. Pass directly to the ZK prover witness.</span>
+            </div>
+            <div class="field-row">
+              <span class="field-name">path_indices</span>
+              <span class="field-type">[]int</span>
+              <span class="field-desc">Left/right indicator per level (0 = left sibling, 1 = right sibling).</span>
+            </div>
+            <div class="field-row">
+              <span class="field-name">root</span>
+              <span class="field-type">string (hex)</span>
+              <span class="field-desc">Merkle root at query time. Must match the stored root in the on-chain Groth16 verifier.</span>
+            </div>
+            <div class="field-row">
+              <span class="field-name">event_ledger_timestamp</span>
+              <span class="field-type">string (ISO 8601)</span>
+              <span class="field-desc">UTC timestamp of the original on-chain event. Determines whether the source event has exceeded Soroban RPC's 7-day retention window.</span>
+            </div>
+          </div>
+          <div class="strip strip-warn">
+            <span class="strip-mark">404</span>
+            <div class="strip-text"><strong>Commitment absent from tree.</strong> Possible causes: indexer lag (&lt; 5s) or <code>CONTRACT_ID</code> mismatch between instance config and the emitting contract.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- /events -->
+      <div class="ep-card">
+        <div class="ep-head">
+          <span class="ep-method">GET</span>
+          <span class="ep-path">/events</span>
+          <span class="ep-desc">Paginated raw event log from SQLite</span>
+        </div>
+        <div class="ep-body">
+          <table class="param-table">
+            <thead><tr><th>Query Param</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="param-name">contract</span></td>
+                <td><span class="param-type">string</span></td>
+                <td><span class="req-yes">YES</span></td>
+                <td class="param-desc">Soroban contract address (C…)</td>
+              </tr>
+              <tr>
+                <td><span class="param-name">from_ledger</span></td>
+                <td><span class="param-type">uint32</span></td>
+                <td><span class="req-no">NO</span></td>
+                <td class="param-desc">Return events at or after this ledger. Default: 0.</td>
+              </tr>
+              <tr>
+                <td><span class="param-name">limit</span></td>
+                <td><span class="param-type">int</span></td>
+                <td><span class="req-no">NO</span></td>
+                <td class="param-desc">Max events to return. Default: 100, max: 200.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="code-frame">
+            <div class="code-bar">
+              <div class="code-dots"><div class="cdot cdot-r"></div><div class="cdot cdot-y"></div><div class="cdot cdot-g"></div></div>
+              <span class="code-fname">example · curl</span>
+              <button class="copy-btn" data-tgt="ex-events">COPY</button>
+            </div>
+            <div class="code-body" id="ex-events"><span class="t-cmd">curl</span> <span class="t-str">"https://&lt;instance&gt;.onrender.com/events?contract=CB3A7O...&limit=10"</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ep-list -->
+
+    <!-- Quick start -->
+    <div class="sec-head">Integration Guide</div>
+    <div class="qs-steps">
+
+      <div class="step-row">
+        <div class="step-num">01</div>
+        <div class="step-body">
+          <div class="step-title">Probe Node Health</div>
+          <div class="step-desc">Poll <code>/health</code> before issuing proof requests. <code>"status": "ok"</code> confirms all subsystems active. Cold Boot Rehydration requires up to 60s following a free-tier idle period.</div>
+          <div class="code-frame">
+            <div class="code-bar">
+              <div class="code-dots"><div class="cdot cdot-r"></div><div class="cdot cdot-y"></div><div class="cdot cdot-g"></div></div>
+              <button class="copy-btn" data-tgt="qs1">COPY</button>
+            </div>
+            <div class="code-body" id="qs1"><span class="t-cmd">curl</span> https://&lt;instance&gt;.onrender.com/health</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-row">
+        <div class="step-num">02</div>
+        <div class="step-body">
+          <div class="step-title">Read the Active Merkle Root</div>
+          <div class="step-desc">The returned root is the canonical state digest held by the on-chain Groth16 verifier. All proof generation must target this root.</div>
+          <div class="code-frame">
+            <div class="code-bar">
+              <div class="code-dots"><div class="cdot cdot-r"></div><div class="cdot cdot-y"></div><div class="cdot cdot-g"></div></div>
+              <button class="copy-btn" data-tgt="qs2">COPY</button>
+            </div>
+            <div class="code-body" id="qs2"><span class="t-cmd">curl</span> https://&lt;instance&gt;.onrender.com/tree/root</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-row">
+        <div class="step-num">03</div>
+        <div class="step-body">
+          <div class="step-title">Request a Membership Proof</div>
+          <div class="step-desc">Supply the 64-char BN254 scalar emitted by the Soroban contract as <code>new_commitment_event</code>. The response path[] is ordered bottom-up; pass it with leaf_index directly into the Noir/Circom witness.</div>
+          <div class="code-frame">
+            <div class="code-bar">
+              <div class="code-dots"><div class="cdot cdot-r"></div><div class="cdot cdot-y"></div><div class="cdot cdot-g"></div></div>
+              <button class="copy-btn" data-tgt="qs3">COPY</button>
+            </div>
+            <div class="code-body" id="qs3"><span class="t-cmd">curl</span> https://&lt;instance&gt;.onrender.com/tree/proof/YOUR_COMMITMENT_HEX
+
+<span class="t-cmt"># Returns leaf_index + 20-element sibling path + root</span>
+<span class="t-cmt"># Feed path[] and leaf_index directly into your Noir/Circom prover</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-row">
+        <div class="step-num">04</div>
+        <div class="step-body">
+          <div class="step-title">Self-Host for Mainnet</div>
+          <div class="step-desc">Deploy a sovereign indexer against any Soroban contract. SQLite WAL mode; no external coordination or shared infrastructure required.</div>
+          <div class="code-frame">
+            <div class="code-bar">
+              <div class="code-dots"><div class="cdot cdot-r"></div><div class="cdot cdot-y"></div><div class="cdot cdot-g"></div></div>
+              <button class="copy-btn" data-tgt="qs4">COPY</button>
+            </div>
+            <div class="code-body" id="qs4"><span class="t-cmd">git clone</span> https://github.com/karengiannetto/mnemox
+<span class="t-cmd">cd</span> mnemox && <span class="t-cmd">cp</span> .env.example .env
+<span class="t-cmt"># Edit .env: CONTRACT_ID, STELLAR_RPC_URL, START_LEDGER</span>
+<span class="t-cmd">make run</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <span>MNEMOX // HACKATHON ALPHA 2026</span>
+  <div class="footer-links">
+    <a href="/health">Health</a>
+    <a href="/tree/root">Root</a>
+    <a href="index.html">Home</a>
+    <a href="dashboard.html">Dashboard</a>
+  </div>
+</footer>
+
+<script>
+// ── Copy buttons ──
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tgt = document.getElementById(btn.getAttribute('data-tgt'));
+    if (!tgt) return;
+    const text = (tgt.textContent || '').trim();
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'COPIED';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
+    });
+  });
+});
+
+// ── Live base URL ──
+document.getElementById('base-url').textContent = window.location.origin;
+
+// ── Cinematic canvas background ──
+(function(){
+  const cv = document.getElementById('bg-canvas');
+  const cx = cv.getContext('2d');
+  let W, H, t = 0;
+
+  const orbs = [
+    { bx:.50, by:.08, ax:.28, ay:.20, px:1.00, py:0.70, ph:0.00, r:.42, c:[102,2,60],    a:.32 },
+    { bx:.10, by:.70, ax:.20, ay:.18, px:0.65, py:1.10, ph:1.57, r:.36, c:[102,2,60],    a:.22 },
+    { bx:.90, by:.82, ax:.18, ay:.24, px:1.20, py:0.80, ph:3.14, r:.38, c:[102,2,60],    a:.20 },
+    { bx:.70, by:.28, ax:.22, ay:.16, px:0.90, py:1.30, ph:0.80, r:.28, c:[80,2,48],     a:.16 },
+    { bx:.28, by:.44, ax:.12, ay:.09, px:1.40, py:0.90, ph:2.10, r:.16, c:[202,209,131], a:.04 },
+    { bx:.80, by:.14, ax:.09, ay:.11, px:1.10, py:1.50, ph:4.00, r:.12, c:[202,209,131], a:.03 },
+  ];
+
+  const pts = Array.from({length:45}, () => ({
+    x:Math.random(), y:Math.random(),
+    s:0.5+Math.random()*1.1,
+    sp:0.00003+Math.random()*0.00007,
+    o:0.03+Math.random()*0.10,
+    d:Math.random()*Math.PI*2,
+  }));
+
+  function resize(){ W=cv.width=window.innerWidth; H=cv.height=window.innerHeight }
+
+  function draw(){
+    t+=0.004;
+    cx.clearRect(0,0,W,H);
+    cx.fillStyle='#030305';
+    cx.fillRect(0,0,W,H);
+
+    for(const o of orbs){
+      const x=(o.bx+o.ax*Math.sin(t*o.px+o.ph))*W;
+      const y=(o.by+o.ay*Math.cos(t*o.py+o.ph))*H;
+      const r=o.r*Math.min(W,H);
+      const g=cx.createRadialGradient(x,y,0,x,y,r);
+      g.addColorStop(0,   `rgba(${o.c[0]},${o.c[1]},${o.c[2]},${o.a})`);
+      g.addColorStop(0.45,`rgba(${o.c[0]},${o.c[1]},${o.c[2]},${(o.a*0.28).toFixed(3)})`);
+      g.addColorStop(1,   `rgba(${o.c[0]},${o.c[1]},${o.c[2]},0)`);
+      cx.fillStyle=g;
+      cx.fillRect(0,0,W,H);
+    }
+
+    for(const p of pts){
+      p.y-=p.sp;
+      p.x+=Math.sin(t*0.8+p.d)*0.00016;
+      if(p.y<-0.01){p.y=1.01;p.x=Math.random()}
+      cx.beginPath();
+      cx.arc(p.x*W,p.y*H,p.s,0,Math.PI*2);
+      cx.fillStyle=`rgba(202,209,131,${p.o})`;
+      cx.fill();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener('resize',resize);
+  draw();
+})();
+</script>
+</body>
+</html>
