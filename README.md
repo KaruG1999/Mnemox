@@ -185,3 +185,24 @@ cd ui/sdk && npm run build
 ## Security
 
 See [`SECURITY.md`](SECURITY.md) for the cryptographic blindness proof, threat matrix, federated High-Availability quorum model, and host hardening checklist.
+
+---
+
+## Mainnet Production Roadmap & Auditing Targets
+
+Before transitioning Mnemox from Testnet/Futurenet environments into a high-stakes Stellar Mainnet production deployment, the following architecture hardening milestones must be implemented:
+
+### 1. Tree Snapshot Serialization (Storage & Boot Hardening)
+* **Current State:** The depth-20 Merkle tree is rehydrated into RAM by scanning the SQLite database sequentially (`ORDER BY ledger ASC, id ASC`) on every cold boot.
+* **Production Risk:** Under high Mainnet throughput, log accumulation over months will linearly increase restart rehydration times, introducing unacceptable API downtime during node maintenance.
+* **Mitigation:** Implement periodic background tree state snapshotting using a binary serialization format (e.g., Protocol Buffers or raw byte streams). On restart, the memory tree will load the latest snapshot in $O(1)$ and replay only the delta ledgers remaining in the WAL.
+
+### 2. Multi-Node Quorum Federation (Decentralization)
+* **Current State:** Mnemox runs as a single-instance infrastructure sidecar bound to a local host.
+* **Production Risk:** A localized hardware or network failure turns the single sidecar into a single point of failure (SPOF) for dependent ZK-dApps.
+* **Mitigation:** Implement the multi-node Byzantine Fault Tolerant (BFT) quorum federation framework detailed in `SECURITY.md`. Multiple independent Mnemox instances will cross-verify state roots over gossip protocols before finalizing block inclusion.
+
+### 3. Multi-Provider RPC Verification (Data Ingestion Integrity)
+* **Current State:** The asynchronous ingestion pipeline polls transactions from a single configured Soroban RPC provider endpoint.
+* **Production Risk:** If the target RPC provider suffers a severe desynchronization or a temporary network fork, Mnemox could ingest blocks from an unvalidated chain state.
+* **Mitigation:** Implement a multi-endpoint quorum client wrapper. The streaming daemon will compare ledger state hashes across at least 3 distinct RPC node providers before committing XDR events into the SQLite WAL persistence layer.
