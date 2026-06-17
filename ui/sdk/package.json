@@ -1,0 +1,29 @@
+{
+  "name": "@mnemox/sdk",
+  "version": "1.0.0",
+  "description": "TypeScript client SDK for the Mnemox ZK event indexer — Merkle proof retrieval and Noir/Circom witness formatting",
+  "author": "Mnemox Contributors",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
