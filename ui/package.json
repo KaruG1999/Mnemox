@@ -1,0 +1,25 @@
+{
+  "name": "mnemox-remotion",
+  "version": "1.0.0",
+  "description": "Mnemox 20s pitch animation",
+  "scripts": {
+    "start": "remotion studio",
+    "render": "remotion render MnemoxIntro out/mnemox-intro.mp4 --codec=h264 --jpeg-quality=95",
+    "render:prores": "remotion render MnemoxIntro out/mnemox-intro.mov --codec=prores"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.176",
+    "@remotion/google-fonts": "4.0.176",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.176"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.4.5"
+  },
+  "remotion": {
+    "entryPoint": "src/index.ts"
+  }
+}
