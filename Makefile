@@ -1,6 +1,9 @@
 BINARY=mnemox
 CMD=./cmd/mnemox
 
+-include .env
+export
+
 .PHONY: build build-prod build-static run test clean
 
 # Dev build — native OS, CGO enabled via host toolchain.
