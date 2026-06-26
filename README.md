@@ -102,6 +102,21 @@ CGO_ENABLED=1 go run ./cmd/mnemox
 
 The API is reachable at `http://127.0.0.1:8080`.
 
+### Offline demo (no live RPC required)
+
+```bash
+# 1. Seed 237 BN254-valid commitment events into a local database
+python3 scripts/seed_demo.py
+
+# 2. Start with DEMO_MODE=1 to bypass the live RPC sync check
+DEMO_MODE=1 make run
+
+# 3. Run the end-to-end smoke test (health → root → proof)
+bash scripts/demo.sh
+```
+
+`DEMO_MODE=1` short-circuits `assertSyncState` and backdates `uptime_seconds` by 24 h. Never enable in production — see `.env.example`.
+
 ---
 
 ## API Endpoints
