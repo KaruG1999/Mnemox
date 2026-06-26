@@ -1,5 +1,5 @@
-# Binary output
-mnemox
+# Binary output — /mnemox anchors to root only, so cmd/mnemox/ is not excluded
+/mnemox
 bin/
 
 # SQLite database and WAL auxiliary files
@@ -14,6 +14,11 @@ bin/
 node_modules/
 dist/
 out/
+
+# SDK pre-built artifacts must be committed so judges can npm install ./ui/sdk directly.
+# The root `dist/` rule above ignores all other dist/ dirs (Remotion, etc.).
+!ui/sdk/dist/
+!ui/sdk/dist/**
 
 # Go build cache (local artifacts)
 *.test

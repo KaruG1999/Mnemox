@@ -552,9 +552,9 @@ body::before{content:none}
   <span class="rs">//</span>
   BYPASS 7-DAY RPC PRUNING
   <span class="rs">//</span>
-  <a href="docs.html">REST API</a>
+  <a href="/docs">REST API</a>
   <span class="rs">//</span>
-  <a href="dashboard.html">LIVE DASHBOARD</a>
+  <a href="/dashboard">LIVE DASHBOARD</a>
 </div>
 
 <div id="shell">
@@ -574,9 +574,8 @@ body::before{content:none}
     <div class="seg">
       <div class="seg-inner" id="seg-ctrl">
         <div class="seg-slide" id="seg-slide"></div>
-        <div class="seg-btn active" data-tab="01">01 // OVERVIEW</div>
-        <div class="seg-btn" data-tab="02">02 // REST REFERENCE</div>
-        <div class="seg-btn" data-tab="03">03 // ARCHITECTURE</div>
+        <div class="seg-btn active" data-tab="01">01 // OVERVIEW &amp; DASHBOARD</div>
+        <div class="seg-btn" data-tab="02">02 // API REFERENCE</div>
       </div>
     </div>
 
@@ -585,7 +584,7 @@ body::before{content:none}
         <span class="pulse-dot"></span>
         TESTNET
       </div>
-      <a class="nav-dash-link" href="dashboard.html">
+      <a class="nav-dash-link" href="/dashboard">
         Dashboard
         <svg class="btn-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 8h10M9 4l4 4-4 4"/>
@@ -614,14 +613,14 @@ body::before{content:none}
           regardless of ledger age.
         </p>
         <div class="hero-actions">
-          <a class="btn-accent" href="dashboard.html">
+          <a class="btn-accent" href="/dashboard">
             Open Dashboard
             <svg class="btn-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 8h10M9 4l4 4-4 4"/>
             </svg>
           </a>
           <div class="btn-glass" onclick="switchTab('02')">
-            REST Reference
+            API Reference
             <svg class="btn-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M3 2h7l3 3v9H3z"/><path d="M10 2v3h3"/>
             </svg>
@@ -834,113 +833,6 @@ body::before{content:none}
   "limit":  50,
   "offset": 0
 }</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- 03 ARCHITECTURE -->
-    <div class="panel" id="panel-03">
-      <div class="arch-grid">
-
-        <div class="arch-card">
-          <div class="arch-tag">Cryptographic Core</div>
-          <div class="arch-title">Poseidon BN254 Incremental Merkle Tree</div>
-          <div class="invariant">
-            <div class="inv-row">
-              <div class="inv-label">DEPTH</div>
-              <div class="inv-val accent">20 levels · 2²⁰ max leaves</div>
-            </div>
-            <div class="inv-row">
-              <div class="inv-label">HASH_FN</div>
-              <div class="inv-val">Poseidon over BN254 scalar field</div>
-            </div>
-            <div class="inv-row">
-              <div class="inv-label">MODULUS</div>
-              <div class="inv-val accent"><span class="zk-scramble" data-value="21888242871839275222246405745257275088548364400416034343698204186575808495617">21888242871839275222246405745257275088548364400416034343698204186575808495617</span></div>
-            </div>
-            <div class="inv-row">
-              <div class="inv-label">INSERT</div>
-              <div class="inv-val">filledSubtrees pattern · O(depth) per leaf</div>
-            </div>
-            <div class="inv-row">
-              <div class="inv-label">CONSTRAINT</div>
-              <div class="inv-val"><span class="constraint">CONSTRAINT //</span>Insert-only. No deletion. Gaps are permanent.</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="arch-card">
-          <div class="arch-tag">Persistence Layer</div>
-          <div class="arch-title">SQLite WAL · Single-Writer Serialization</div>
-          <div class="invariant">
-            <div class="inv-row">
-              <div class="inv-label">MODE</div>
-              <div class="inv-val accent">WAL · journal_mode=WAL</div>
-            </div>
-            <div class="inv-row">
-              <div class="inv-label">WRITERS</div>
-              <div class="inv-val">SetMaxOpenConns(1) · serialized</div>
-            </div>
-            <div class="inv-row">
-              <div class="inv-label">IDEMPOTENT</div>
-              <div class="inv-val">INSERT OR IGNORE on events.id PK</div>
-            </div>
-            <div class="inv-row">
-              <div class="inv-label">BATCH</div>
-              <div class="inv-val">Cursor + events in single transaction</div>
-            </div>
-            <div class="inv-row">
-              <div class="inv-label">FAILMODE</div>
-              <div class="inv-val"><span class="failmode">FAILMODE //</span>Ephemeral disk → Cold Boot Rehydration on wake</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="arch-card">
-          <div class="arch-tag">Rehydration Engine</div>
-          <div class="arch-title">Cold Boot Deterministic Rebuild</div>
-          <div class="arch-body" style="margin-bottom:12px">
-            On every restart, <code style="font-family:var(--font-mono);font-size:10px;color:var(--accent)">rebuildTree()</code> replays all SQLite leaves in strict ledger order.
-            API is blocked until rehydration completes. Tree state is identical to pre-restart state.
-          </div>
-          <div class="invariant">
-            <div class="inv-row">
-              <div class="inv-label">ORDER</div>
-              <div class="inv-val accent">ORDER BY ledger ASC, id ASC</div>
-            </div>
-            <div class="inv-row">
-              <div class="inv-label">GUARANTEE</div>
-              <div class="inv-val">Root is deterministic given same leaf sequence</div>
-            </div>
-            <div class="inv-row">
-              <div class="inv-label">CONSTRAINT</div>
-              <div class="inv-val"><span class="constraint">CONSTRAINT //</span>START_LEDGER is a one-time decision. Immutable post-deploy.</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="arch-card">
-          <div class="arch-tag">API Defense</div>
-          <div class="arch-title">Rate Limiting · Input Validation · Timeouts</div>
-          <div class="invariant">
-            <div class="inv-row">
-              <div class="inv-label">RATE_LIMIT</div>
-              <div class="inv-val">60 burst / 30 rps · token-bucket</div>
-            </div>
-            <div class="inv-row">
-              <div class="inv-label">INPUT</div>
-              <div class="inv-val">130-char bound + hex whitelist on commitment</div>
-            </div>
-            <div class="inv-row">
-              <div class="inv-label">TIMEOUTS</div>
-              <div class="inv-val">Read 10s · Write 30s · Idle 60s</div>
-            </div>
-            <div class="inv-row">
-              <div class="inv-label">FIELD_CHK</div>
-              <div class="inv-val accent">Rejects commitment ≥ BN254 scalar modulus</div>
             </div>
           </div>
         </div>

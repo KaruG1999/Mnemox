@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	rpcclient "github.com/stellar/go/clients/rpcclient"
@@ -23,13 +24,20 @@ type Server struct {
 }
 
 func NewServer(st *database.Store, tree *crypto.MerkleTree, network, rpcURL string) *Server {
-	return &Server{
+	s := &Server{
 		store:   st,
 		tree:    tree,
 		rpc:     rpcclient.NewClient(rpcURL, nil),
 		network: network,
 		start:   time.Now(),
 	}
+	if os.Getenv("DEMO_MODE") == "1" {
+		// Short-circuit live RPC sync check and backdate start to simulate 24 h uptime.
+		s.syncCheckFn = func(_ context.Context) error { return nil }
+		s.start = time.Now().Add(-86400 * time.Second)
+		log.Println("server: DEMO_MODE enabled — sync guard bypassed, uptime offset 86400 s")
+	}
+	return s
 }
 
 func (s *Server) Handler() http.Handler {

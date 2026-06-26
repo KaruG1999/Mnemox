@@ -44,8 +44,7 @@ func BenchmarkTreeInsertionAndProof(b *testing.B) {
 				return
 			}
 
-			// O(1) lookup via the leafIndex map added in the Phase 11 optimisation.
-			// Before the cache this was an O(n) linear scan over t.leaves.
+			// O(1) lookup via the leafIndex map; FindLeaf was O(n) before the cache.
 			commitment := fmt.Sprintf("%064x", leaf)
 			idx := tree.FindLeaf(commitment)
 			if idx < 0 {

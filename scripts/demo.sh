@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE="http://localhost:8080"
+BASE="http://127.0.0.1:8080"
 WAIT_SECS=${WAIT_SECS:-15}
 
 echo ""
@@ -98,6 +98,6 @@ else
 fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Dashboard: http://localhost:8080/dashboard"
+echo "  Dashboard: http://127.0.0.1:8080/dashboard"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""

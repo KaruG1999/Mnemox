@@ -44,6 +44,9 @@ Protocol 26 (Yardstick) drastically reduced the on-chain gas costs for verifying
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   └── src/                    Remotion pitch animation (independent package)
+├── scripts/
+│   ├── demo.sh                 End-to-end smoke test: health → root → proof
+│   └── seed_demo.py            Seeds 237 BN254-valid events for offline demo
 ├── go.mod                      Go module root (github.com/karengiannetto/mnemox)
 ├── Makefile
 ├── SECURITY.md
