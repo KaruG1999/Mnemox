@@ -163,8 +163,8 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	limit := 100
 	if v := q.Get("limit"); v != "" {
 		n, err := strconv.Atoi(v)
-		if err != nil || n <= 0 {
-			writeError(w, http.StatusBadRequest, "invalid limit")
+		if err != nil || n <= 0 || n > 1000 {
+			writeError(w, http.StatusBadRequest, "invalid limit: must be between 1 and 1000")
 			return
 		}
 		limit = n

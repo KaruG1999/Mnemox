@@ -61,7 +61,7 @@ func (s *Server) Handler() http.Handler {
 	})
 	// Rate-limit at 60 burst / 30 sustained rps to protect the O(n) FindLeaf
 	// path and SQLite reads from trivial DoS.
-	return logging(rateLimit(mux, 60, 30))
+	return securityHeaders(logging(rateLimit(mux, 60, 30)))
 }
 
 // rateLimit implements a token-bucket middleware.
@@ -98,6 +98,22 @@ func logging(next http.Handler) http.Handler {
 		t := time.Now()
 		next.ServeHTTP(w, r)
 		log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(t))
+	})
+}
+
+// securityHeaders adds defence-in-depth HTTP headers on every response.
+// Aligned with the Stellar Security Guide §B.4 (RPC & Backend Security).
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("Referrer-Policy", "no-referrer")
+		// Allows inline styles/scripts required by the embedded dashboard HTML;
+		// frame-ancestors 'none' reinforces X-Frame-Options for CSP-aware browsers.
+		h.Set("Content-Security-Policy",
+			"default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'")
+		next.ServeHTTP(w, r)
 	})
 }
 
